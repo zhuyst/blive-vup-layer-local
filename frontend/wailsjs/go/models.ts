@@ -14,11 +14,6 @@ export namespace main {
 	}
 	export class InitRequestData {
 	    code: string;
-	    timestamp: number;
-	    room_id: number;
-	    mid: number;
-	    caller: string;
-	    code_sign: string;
 	    config: LiveConfig;
 	
 	    static createFrom(source: any = {}) {
@@ -28,11 +23,6 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.code = source["code"];
-	        this.timestamp = source["timestamp"];
-	        this.room_id = source["room_id"];
-	        this.mid = source["mid"];
-	        this.caller = source["caller"];
-	        this.code_sign = source["code_sign"];
 	        this.config = this.convertValues(source["config"], LiveConfig);
 	    }
 	

@@ -17,7 +17,6 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -123,20 +122,6 @@ type ChatMessage struct {
 }
 
 func (a *App) InitConn(initData *InitRequestData) *Result {
-	if !a.cfg.BiliBili.DisableValidateSign {
-		signParams := live.H5SignatureParams{
-			Timestamp: strconv.FormatInt(initData.Timestamp, 10),
-			Code:      initData.Code,
-			Mid:       strconv.FormatInt(initData.Mid, 10),
-			Caller:    initData.Caller,
-
-			CodeSign: initData.CodeSign,
-		}
-		if ok := signParams.ValidateSignature(a.cfg.BiliBili.SecretKey); !ok {
-			return BuildResultError(CodeBadRequest, "invalid signature")
-		}
-	}
-
 	a.livingCfg = initData.Config
 	a.writeResultOK(ResultTypeConfig, a.livingCfg)
 

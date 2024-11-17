@@ -24,8 +24,7 @@ type AliyunTTSConfig struct {
 }
 
 type BiliBiliConfig struct {
-	AccessKey           string `toml:"access_key"`
-	SecretKey           string `toml:"secret_key"`
-	AppId               int64  `toml:"app_id"`
-	DisableValidateSign bool   `toml:"disable_validate_sign"`
+	AccessKey string `toml:"access_key"`
+	SecretKey string `toml:"secret_key"`
+	AppId     int64  `toml:"app_id"`
 }

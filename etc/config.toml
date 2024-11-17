@@ -32,4 +32,3 @@ app_key = ""
 access_key = ""
 secret_key = ""
 app_id = 0
-disable_validate_sign = false

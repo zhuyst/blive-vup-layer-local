@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive } from 'vue'
 import { EventsOn } from '#/runtime'
-import { InitConn, SetConfig, StopConn } from '#/runtime/go/main'
+import { InitConn, SetConfig, StopConn } from '#/go/main/App'
 import { useStore } from '@/store/live'
 // import Membership from '@/component/Membership.vue'
 import DanmuList from '@/component/DanmuList.vue'
