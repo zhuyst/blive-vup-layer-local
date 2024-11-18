@@ -1,20 +1,14 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { defineEmits } from 'vue'
+import { defineModel, defineEmits } from 'vue'
 
-const inputValue = ref('')
+const model = defineModel({
+  type: String,
+  default: ''
+})
 const emit = defineEmits(['confirm', 'close'])
 
-onMounted(() => {
-  const savedCode = localStorage.getItem('savedCode');
-  if (savedCode) {
-    inputValue.value = savedCode;
-  }
-});
-
 const handleConfirm = () => {
-  localStorage.setItem('savedCode', inputValue.value);
-  emit('confirm', inputValue.value);
+  emit('confirm', model.value);
 };
 
 const handleClose = () => {
@@ -33,7 +27,7 @@ const handleClose = () => {
       </p>
       <div class="input-group">
         <label for="code">身份码：</label>
-        <input v-model="inputValue" type="text" id="code" placeholder="请输入身份码" />
+        <input v-model="model" type="text" id="code" placeholder="请输入身份码" />
       </div>
       <div class="button-group">
         <button @click="handleConfirm">确定</button>

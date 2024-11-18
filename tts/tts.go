@@ -3,9 +3,11 @@ package tts
 import (
 	"blive-vup-layer/config"
 	nls "blive-vup-layer/tts/alibabacloud-nls-go-sdk"
+	"crypto/md5"
+	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
-	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"io"
 	syslog "log"
@@ -29,9 +31,12 @@ type Task struct {
 	TaskId string
 	Logger *log.Entry
 
-	File  io.Writer
+	Cache bool
 	Fname string
-	Err   error
+
+	TmpFile  *os.File
+	TmpFname string
+	Err      error
 
 	param           nls.SpeechSynthesisStartParam
 	text            string
@@ -43,29 +48,59 @@ type NewTaskParams struct {
 	PitchRate int
 }
 
-func (tts *TTS) NewTask(params *NewTaskParams) (*Task, error) {
-	taskId := uuid.NewV4().String()
-	l := log.WithField("task_id", uuid.NewV4().String())
+type TTSParams struct {
+	nls.SpeechSynthesisStartParam
+	Text string `json:"text"`
+}
 
-	fname := path.Join(config.ResultFilePath, fmt.Sprintf("tts-%s.wav", taskId))
-	fout, err := os.OpenFile(fname, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
-	if err != nil {
-		return nil, err
-	}
+func (tts *TTS) NewTask(params *NewTaskParams) (*Task, error) {
 	param := nls.SpeechSynthesisStartParam{
 		Voice:      "voice-3e06127",
 		Format:     "wav",
-		SampleRate: 24000,
+		SampleRate: 48000,
 		Volume:     50,
 		SpeechRate: -100,
 		PitchRate:  params.PitchRate,
 	}
+	p := TTSParams{
+		SpeechSynthesisStartParam: param,
+		Text:                      params.Text,
+	}
+	j, _ := json.Marshal(p)
+	md5Str := md5String(string(j))
+
+	taskId := fmt.Sprintf("%s-%d", md5Str, len(params.Text))
+	l := log.WithField("task_id", taskId)
+
+	fname := path.Join(config.ResultFilePath, fmt.Sprintf("tts-%s.wav", taskId))
+	if isFileExist(fname) {
+		return &Task{
+			TaskId: taskId,
+			Logger: l,
+			Fname:  fname,
+
+			Cache: true,
+
+			param: param,
+			text:  params.Text,
+		}, nil
+	}
+
+	tmpFname := path.Join(config.ResultFilePath, fmt.Sprintf("tts-%s.wav.tmp", taskId))
+	os.Remove(tmpFname)
+	tmpFout, err := os.OpenFile(tmpFname, os.O_RDWR|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
+		return nil, err
+	}
 
 	t := &Task{
-		TaskId: taskId,
-		Logger: l,
-		File:   fout,
-		Fname:  fname,
+		TaskId:   taskId,
+		Logger:   l,
+		TmpFile:  tmpFout,
+		TmpFname: tmpFname,
+		Fname:    fname,
+
+		Cache: false,
 
 		param: param,
 		text:  params.Text,
@@ -97,6 +132,12 @@ func (tts *TTS) NewTask(params *NewTaskParams) (*Task, error) {
 }
 
 func (task *Task) Run() (string, error) {
+	if task.Cache {
+		return task.Fname, nil
+	}
+
+	defer task.TmpFile.Close()
+
 	ch, err := task.speechSynthesis.Start(task.text, task.param, nil)
 	if err != nil {
 		task.Logger.Errorf("Start err: %v", err)
@@ -113,30 +154,28 @@ func (task *Task) Run() (string, error) {
 	task.Logger.Infof("Synthesis done")
 	task.speechSynthesis.Shutdown()
 
-	go func() {
-		cleanTimer := time.NewTimer(time.Hour)
-		defer cleanTimer.Stop()
-		<-cleanTimer.C
-		os.Remove(task.Fname)
-	}()
+	os.Rename(task.TmpFname, task.Fname)
 
 	return task.Fname, nil
 }
 
 func (task *Task) onTaskFailed(text string, param interface{}) {
 	task.Logger.Errorf("TaskFailed: %s", text)
+	task.TmpFile.Close()
 }
 
 func (task *Task) onSynthesisResult(data []byte, param interface{}) {
-	task.File.Write(data)
+	task.TmpFile.Write(data)
 }
 
 func (task *Task) onCompleted(text string, param interface{}) {
 	task.Logger.Infof("onCompleted: %s", text)
+	task.TmpFile.Close()
 }
 
 func (task *Task) onClose(param interface{}) {
 	task.Logger.Infof("onClosed")
+	task.TmpFile.Close()
 }
 
 func (task *Task) waitReady(ch chan bool) error {
@@ -156,4 +195,15 @@ func (task *Task) waitReady(ch chan bool) error {
 		}
 	}
 	return nil
+}
+
+func isFileExist(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
+}
+
+func md5String(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
 }

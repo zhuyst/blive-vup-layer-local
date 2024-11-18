@@ -15,13 +15,13 @@ import noFaceSrc from '@/assets/noface.gif'
 const state = reactive({
   show_popup: false,
   is_test: false,
-  is_connect_websocket: false,
   is_connect_room: false,
   connect_message: '正在连接至直播间',
 
   cfg: {
     disable_llm: false
   },
+  code: '',
 
   room_info: {
     room_id: 0,
@@ -30,19 +30,15 @@ const state = reactive({
   }
 })
 
-let init_params = {
-  code: '',
-}
+async function handleConfirm(code) {
+  await StopConn()
 
-function handleConfirm(code) {
-  init_params.code = code
+  state.code = code
   state.show_popup = false
 
   console.log('身份码code：', code)
-  console.log('身份信息:', init_params)
 
-  if (state.is_connect_websocket) {
-    state.is_connect_websocket = false
+  if (state.is_connect_room) {
     state.is_connect_room = false
   }
 
@@ -58,7 +54,7 @@ function handleConfirm(code) {
 }
 
 function handleReenterCode() {
-  StopConn()
+  console.log('state.code', state.code)
 
   // 弹出弹框
   state.show_popup = true
@@ -67,19 +63,19 @@ function handleReenterCode() {
 const store = useStore()
 const { sendMemberShip, sendDanmu, sendSc, sendGift, sendTTS, sendLLM, sendEnterRoom } = store
 
-EventsOn('room', function(data) {
+EventsOn('room', async function(data) {
   console.log('[EventsOn]收到消息：', data)
 
   if (data.code !== 0) {
     state.is_connect_room = false
     state.connect_message = '连接失败，正在重试，失败原因：' + data.msg
     console.error('[直播间]房间连接失败, 5秒后尝试重连，错误信息：', data.msg)
-    StopConn()
-    setTimeout(() => {
-      InitConn({
+    await StopConn()
+    setTimeout(async () => {
+      await InitConn({
         type: 'init',
         data: {
-          ...init_params,
+          code: state.code,
           config: state.cfg,
         }
       })
@@ -90,6 +86,7 @@ EventsOn('room', function(data) {
   state.connect_message = '连接成功'
   console.log('[直播间]房间连接成功, 房间信息：', data.data)
   state.room_info = data.data
+  localStorage.setItem('savedCode', state.code);
 })
 EventsOn('danmu', function(data) {
   console.log('[EventsOn]收到消息：', data)
@@ -120,36 +117,47 @@ EventsOn('enter_room', function(data) {
   sendEnterRoom(data.data)
 })
 
-function connectWebSocketServer() {
-  if (state.is_connect_websocket) {
+async function connectWebSocketServer() {
+  if (state.is_connect_room) {
     return
   }
-  if (!init_params.code) {
+  if (!state.code) {
     state.connect_message = '请提供身份码'
     return
   }
 
-  InitConn({
-    ...init_params,
+  state.connect_message = '正在连接至直播间'
+  await InitConn({
+    code: state.code,
     config: state.cfg
   })
-  state.is_connect_websocket = true
-  state.connect_message = '正在连接至直播间'
+  state.is_connect_room = true
 }
 
-function handleDisableLlmChange() {
+async function handleDisableLlmChange() {
   console.log('config changed: ', JSON.stringify(state.cfg))
-  SetConfig(state.cfg)
+  await SetConfig(state.cfg)
 }
 
 onMounted(() => {
-  state.show_popup = true
+  const savedCode = localStorage.getItem('savedCode');
+  if (savedCode) {
+    state.code = savedCode;
+    connectWebSocketServer();
+  } else {
+    state.show_popup = true
+  }
 })
 </script>
 
 <template>
   <main>
-    <Popup v-if="state.show_popup" @confirm="handleConfirm" @close="state.show_popup = false" />
+    <Popup 
+      v-if="state.show_popup" 
+      @confirm="handleConfirm" 
+      @close="state.show_popup = false" 
+      v-model="state.code" 
+    />
     <div class="test-buttons" v-if="!state.show_popup && state.is_test">
       <button class="button" @click="sendDanmu()">有人发弹幕</button>
       <button class="button" @click="sendSc()">有人发SC</button>

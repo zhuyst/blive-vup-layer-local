@@ -13,4 +13,13 @@ export default defineConfig({
       '#': fileURLToPath(new URL('./wailsjs', import.meta.url))
     }
   },
+  server: {
+    proxy: {
+      '/result/': {
+        bypass: function () {
+          return false;
+        },
+      },
+    },
+  },
 })

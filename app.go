@@ -13,6 +13,7 @@ import (
 	"github.com/vtb-link/bianka/basic"
 	"github.com/vtb-link/bianka/live"
 	"github.com/vtb-link/bianka/proto"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/exp/slog"
 	"io"
 	"math/rand"
@@ -78,29 +79,51 @@ type App struct {
 
 func (a *App) startup(ctx context.Context) {
 	a.appContext = ctx
+
+	const (
+		ConfigProdFilePath = "./etc/config.toml"
+		ConfigDevFilePath  = "./etc/config-dev.toml"
+	)
+
+	var configFilePath string
+	envInfo := runtime.Environment(ctx)
+	if envInfo.BuildType == "production" {
+		configFilePath = ConfigProdFilePath
+	} else {
+		configFilePath = ConfigDevFilePath
+	}
+
+	var err error
+	a.cfg, err = config.ParseConfig(configFilePath)
+	if err != nil {
+		log.Fatalf("failed to parse config file: %v", err)
+		return
+	}
+
+	a.TTS, err = tts.NewTTS(a.cfg.AliyunTTS)
+	if err != nil {
+		log.Fatalf("tts.NewTTS err: %v", err)
+		return
+	}
+
+	a.Dao, err = dao.NewDao(a.cfg.DbPath)
+	if err != nil {
+		log.Fatalf("dao.NewDao err: %v", err)
+		return
+	}
+
+	a.liveClient = live.NewClient(live.NewConfig(a.cfg.BiliBili.AccessKey, a.cfg.BiliBili.SecretKey, a.cfg.BiliBili.AppId))
+	a.LLM = llm.NewLLM(a.cfg.QianFan)
 }
 
-func NewApp(cfg *config.Config, logWriter io.Writer) (*App, error) {
-	t, err := tts.NewTTS(cfg.AliyunTTS)
-	if err != nil {
-		return nil, fmt.Errorf("tts.NewTTS err: %w", err)
-	}
-	d, err := dao.NewDao(cfg.DbPath)
-	if err != nil {
-		return nil, fmt.Errorf("dao.NewDao err: %w", err)
-	}
+func NewApp(logWriter io.Writer) *App {
 	return &App{
-		cfg:        cfg,
-		liveClient: live.NewClient(live.NewConfig(cfg.BiliBili.AccessKey, cfg.BiliBili.SecretKey, cfg.BiliBili.AppId)),
-		LLM:        llm.NewLLM(cfg.QianFan),
-		TTS:        t,
-		Dao:        d,
-		slog:       slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
 
 		livingCfg: LiveConfig{
 			DisableLlm: false,
 		},
-	}, nil
+	}
 }
 
 type GiftWithTimer struct {
@@ -146,14 +169,18 @@ func (a *App) pushTTS(params *tts.NewTaskParams, force bool) {
 
 func (a *App) init(code string) {
 	if a.startResp != nil {
-		a.writeResultError(ResultTypeRoom, http.StatusBadRequest, "connection already init")
+		a.writeResultOK(ResultTypeRoom, &RoomData{
+			RoomID: a.startResp.AnchorInfo.RoomID,
+			Uname:  a.startResp.AnchorInfo.Uname,
+			UFace:  a.startResp.AnchorInfo.UFace,
+		})
 		return
 	}
 
 	log.Infof("init code: %s", code)
 	startResp, err := a.liveClient.AppStart(code)
 	if err != nil {
-		a.writeResultError(ResultTypeRoom, http.StatusBadRequest, "connection already init")
+		a.writeResultError(ResultTypeRoom, http.StatusBadRequest, err.Error())
 		return
 	}
 	a.startResp = startResp
@@ -171,6 +198,7 @@ func (a *App) init(code string) {
 				if err := a.liveClient.AppHeartbeat(startResp.GameInfo.GameID); err != nil {
 					log.Errorf("Heartbeat fail, err: %v", err)
 					a.connCancel()
+					a.StopConn()
 					go a.init(code)
 					return
 				}
@@ -197,6 +225,7 @@ func (a *App) init(code string) {
 			log.Errorf("Reconnection fail, err: %v", err)
 			a.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
 			a.connCancel()
+			a.StopConn()
 			go a.init(code)
 			return
 		}
@@ -640,6 +669,7 @@ func (a *App) startLlmReply(force bool) {
 func (a *App) StopConn() {
 	if a.wcs != nil {
 		a.wcs.Close()
+		a.wcs = nil
 	}
 	a.startResp = nil
 	a.connContext = nil
