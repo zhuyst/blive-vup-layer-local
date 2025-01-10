@@ -497,7 +497,7 @@ func (a *App) init(code string) {
 			case *proto.CmdLiveStartData:
 				{
 					pushTTS(&tts.NewTaskParams{
-						Text: "主人开始直播啦，弹幕姬启动！",
+						Text: fmt.Sprintf("主人开始直播啦，弹幕姬启动！直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
 					a.isLiving = true
 					break
@@ -550,6 +550,27 @@ func (a *App) init(code string) {
 						}
 					}(d.OpenID)
 
+					break
+				}
+			case *proto.CmdRoomChangeData:
+				{
+					pushTTS(&tts.NewTaskParams{
+						Text: fmt.Sprintf("直播间信息发生变更，直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
+					}, true)
+					break
+				}
+			case *proto.CmdInteractWordData:
+				{
+					a.writeResultOK(ResultTypeInteractWord, &InteractWordData{
+						MsgID:     d.MsgID,
+						OpenID:    d.OpenID,
+						RoomID:    d.RoomID,
+						Timestamp: d.Timestamp,
+						Uname:     d.Uname,
+					})
+					pushTTS(&tts.NewTaskParams{
+						Text: fmt.Sprintf("谢谢%s酱关注直播间", d.Uname),
+					}, true)
 					break
 				}
 			default:

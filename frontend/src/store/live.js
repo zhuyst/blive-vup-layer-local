@@ -1,7 +1,6 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
 import imgSrc from '@/assets/captain_test_loop_1.webp'
 import noFaceSrc from '@/assets/noface.gif'
-import testTTS from '@/assets/test.wav'
 
 function getUUID() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -313,7 +312,7 @@ export const useStore = defineStore('live', {
         uface: noFaceSrc,
 
         fans_medal_name: '巫女酱',
-        fans_medal_level: 0,
+        fans_medal_level: 216,
         fans_medal_wearing_status: true,
 
         msg: data.llm_result
@@ -322,6 +321,21 @@ export const useStore = defineStore('live', {
     },
     sendEnterRoom(data) {
       this.enter_room_list.push(data)
+    },
+    sendInteractWord(data) {
+      const msg_id = getUUID()
+      const danmu_data = {
+        msg_id: msg_id,
+        uname: data.uname,
+        uface: noFaceSrc,
+
+        fans_medal_name: '未知',
+        fans_medal_level: 0,
+        fans_medal_wearing_status: false,
+
+        msg: '关注了直播间'
+      }
+      this.sendDanmu(danmu_data)
     }
   }
 })

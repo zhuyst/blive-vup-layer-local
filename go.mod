@@ -4,6 +4,8 @@ go 1.21
 
 toolchain go1.21.9
 
+replace github.com/vtb-link/bianka v0.2.3 => github.com/zhuyst/bianka v0.2.5
+
 require (
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.52
 	github.com/aliyun/alibabacloud-nls-go-sdk v1.1.1

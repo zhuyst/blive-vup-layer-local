@@ -62,7 +62,7 @@ function handleReenterCode() {
 }
 
 const store = useStore()
-const { sendMemberShip, sendDanmu, sendSc, sendGift, sendTTS, sendLLM, sendEnterRoom } = store
+const { sendMemberShip, sendDanmu, sendSc, sendGift, sendTTS, sendLLM, sendEnterRoom, sendInteractWord } = store
 
 EventsOn('room', async function(data) {
   console.log('[EventsOn]收到消息：', data)
@@ -116,6 +116,10 @@ EventsOn('llm', function(data) {
 EventsOn('enter_room', function(data) {
   console.log('[EventsOn]收到消息：', data)
   sendEnterRoom(data.data)
+})
+EventsOn('interact_word', function(data) {
+  console.log('[EventsOn]收到消息：', data)
+  sendInteractWord(data.data)
 })
 
 async function connectWebSocketServer() {

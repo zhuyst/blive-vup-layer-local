@@ -1,25 +1,18 @@
 package main
 
 const (
-	RequestTypeInit      = "init"
-	RequestTypeHeartbeat = "heartbeat"
-	RequestTypeConfig    = "config"
-
-	ResultTypeHeartbeat = "heartbeat"
-	ResultTypeRoom      = "room"
-	ResultTypeConfig    = "config"
-	ResultTypeDanmu     = "danmu"
-	ResultTypeSuperChat = "superchat"
-	ResultTypeGift      = "gift"
-	ResultTypeGuard     = "guard"
-	ResultTypeEnterRoom = "enter_room"
+	ResultTypeHeartbeat    = "heartbeat"
+	ResultTypeRoom         = "room"
+	ResultTypeConfig       = "config"
+	ResultTypeDanmu        = "danmu"
+	ResultTypeSuperChat    = "superchat"
+	ResultTypeGift         = "gift"
+	ResultTypeGuard        = "guard"
+	ResultTypeEnterRoom    = "enter_room"
+	ResultTypeInteractWord = "interact_word"
 
 	ResultTypeTTS = "tts"
 	ResultTypeLLM = "llm"
-
-	CmdLiveRoomEnter = "LIVE_OPEN_PLATFORM_LIVE_ROOM_ENTER"
-	CmdLiveStart     = "LIVE_OPEN_PLATFORM_LIVE_START"
-	CmdLiveEnd       = "LIVE_OPEN_PLATFORM_LIVE_END"
 )
 
 var danmuGiftList = []string{
@@ -136,6 +129,14 @@ type CmdRoomEnterData struct {
 type RoomEnterData struct {
 	UserData
 	Timestamp int64 `json:"timestamp"`
+}
+
+type InteractWordData struct {
+	MsgID     string `json:"msg_id"`
+	OpenID    string `json:"open_id"`
+	RoomID    int64  `json:"room_id"`
+	Timestamp int64  `json:"timestamp"`
+	Uname     string `json:"uname"`
 }
 
 var GuardLevelMap = map[int]string{
