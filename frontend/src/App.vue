@@ -11,6 +11,7 @@ import EnterRoomList from '@/component/EnterRoomList.vue'
 import TTSAudio from '@/component/TTSAudio.vue'
 import Popup from '@/component/Popup.vue'
 import noFaceSrc from '@/assets/noface.gif'
+import testWavSrc from '@/assets/test.wav'
 
 const state = reactive({
   show_popup: false,
@@ -137,9 +138,15 @@ async function connectWebSocketServer() {
 async function handleDisableLlmChange() {
   console.log('config changed: ', JSON.stringify(state.cfg))
   await SetConfig(state.cfg)
+  localStorage.setItem('disable_llm', state.cfg.disable_llm)
 }
 
 onMounted(() => {
+  const savedDisableLlm = localStorage.getItem('disable_llm')
+  if (savedDisableLlm !== null) {
+    state.cfg.disable_llm = savedDisableLlm === 'true'
+  }
+
   const savedCode = localStorage.getItem('savedCode');
   if (savedCode) {
     state.code = savedCode;
@@ -167,7 +174,7 @@ onMounted(() => {
         class="button"
         @click="
           sendTTS({
-            audio_file_path: testTTS
+            audio_file_path: testWavSrc
           })
         "
       >
