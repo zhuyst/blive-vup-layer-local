@@ -573,6 +573,12 @@ func (a *App) init(code string) {
 					}, true)
 					break
 				}
+			case *proto.CmdWarningData:
+				{
+					pushTTS(&tts.NewTaskParams{
+						Text: fmt.Sprintf("直播间收到超管警告，警告信息为：%s", d.Msg),
+					}, true)
+				}
 			default:
 				{
 					break
