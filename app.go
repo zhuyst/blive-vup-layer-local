@@ -569,7 +569,7 @@ func (a *App) init(code string) {
 						Uname:     d.Uname,
 					})
 					pushTTS(&tts.NewTaskParams{
-						Text: fmt.Sprintf("谢谢%s酱关注直播间", d.Uname),
+						Text: fmt.Sprintf("谢谢%s酱关注直播间，么么哒", d.Uname),
 					}, true)
 					break
 				}
