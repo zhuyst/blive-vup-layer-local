@@ -20,7 +20,8 @@ const state = reactive({
   connect_message: '正在连接至直播间',
 
   cfg: {
-    disable_llm: false
+    disable_llm: false,
+    disable_welcome_limit: false
   },
   code: '',
 
@@ -145,10 +146,21 @@ async function handleDisableLlmChange() {
   localStorage.setItem('disable_llm', state.cfg.disable_llm)
 }
 
+async function handleDisableWelcomeLimitChange() {
+  console.log('config changed: ', JSON.stringify(state.cfg))
+  await SetConfig(state.cfg)
+  localStorage.setItem('disable_welcome_limit', state.cfg.disable_welcome_limit)
+}
+
 onMounted(() => {
   const savedDisableLlm = localStorage.getItem('disable_llm')
   if (savedDisableLlm !== null) {
     state.cfg.disable_llm = savedDisableLlm === 'true'
+  }
+
+  const savedDisableWelcomeLimit = localStorage.getItem('disable_welcome_limit')
+  if (savedDisableWelcomeLimit !== null) {
+    state.cfg.disable_welcome_limit = savedDisableWelcomeLimit === 'true'
   }
 
   const savedCode = localStorage.getItem('savedCode');
@@ -195,13 +207,22 @@ onMounted(() => {
           </div>
           <div class="status-msg">{{ state.connect_message }}</div>
           <button @click="handleReenterCode">重新输入身份码</button>
-          <label for="disable_llm">关闭大模型</label>
+          <br/>
           <input
             type="checkbox"
             id="disable_llm"
             v-model="state.cfg.disable_llm"
             @change="handleDisableLlmChange"
           />
+          <label for="disable_llm">关闭大模型</label>
+          <br/>
+          <input
+            type="checkbox"
+            id="disable_welcome_limit"
+            v-model="state.cfg.disable_welcome_limit"
+            @change="handleDisableWelcomeLimitChange"
+          />
+          <label for="disable_welcome_limit">关闭欢迎进入直播间的播报限制</label>
         </div>
         <DanmuList />
       </div>

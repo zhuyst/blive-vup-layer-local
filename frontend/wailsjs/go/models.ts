@@ -2,6 +2,7 @@ export namespace main {
 	
 	export class LiveConfig {
 	    disable_llm: boolean;
+	    disable_welcome_limit: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new LiveConfig(source);
@@ -10,6 +11,7 @@ export namespace main {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.disable_llm = source["disable_llm"];
+	        this.disable_welcome_limit = source["disable_welcome_limit"];
 	    }
 	}
 	export class InitRequestData {

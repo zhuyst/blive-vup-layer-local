@@ -121,7 +121,8 @@ func NewApp(logWriter io.Writer) *App {
 		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
 
 		livingCfg: LiveConfig{
-			DisableLlm: false,
+			DisableLlm:          false,
+			DisableWelcomeLimit: false,
 		},
 	}
 }
@@ -134,7 +135,8 @@ type GiftWithTimer struct {
 }
 
 type LiveConfig struct {
-	DisableLlm bool `json:"disable_llm"`
+	DisableLlm          bool `json:"disable_llm"`
+	DisableWelcomeLimit bool `json:"disable_welcome_limit"`
 }
 
 type ChatMessage struct {
@@ -535,7 +537,8 @@ func (a *App) init(code string) {
 							return
 						}
 
-						if (u.FansMedalWearingStatus && u.FansMedalLevel >= RoomEnterTTSFansMedalLevel) ||
+						if a.livingCfg.DisableWelcomeLimit ||
+							(u.FansMedalWearingStatus && u.FansMedalLevel >= RoomEnterTTSFansMedalLevel) ||
 							u.GuardLevel > 0 {
 
 							name := d.Uname
