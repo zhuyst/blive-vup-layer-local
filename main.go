@@ -2,6 +2,7 @@ package main
 
 import (
 	"blive-vup-layer/config"
+	"context"
 	"embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -72,9 +73,16 @@ func main() {
 		},
 		BackgroundColour: &options.RGBA{R: 255, G: 255, B: 255, A: 0},
 		OnStartup:        app.startup,
+		OnShutdown: func(ctx context.Context) {
+			app.StopConn()
+		},
 		Bind: []interface{}{
 			app,
 		},
+		// Windows: &windows.Options{
+		// 	WebviewIsTransparent: true,
+		// 	WindowIsTranslucent:  true,
+		// },
 		//Frameless: true,
 	}); err != nil {
 		log.Errorf("wails.Run err: %v", err)

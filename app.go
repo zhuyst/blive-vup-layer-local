@@ -697,6 +697,9 @@ func (a *App) startLlmReply(force bool) {
 }
 
 func (a *App) StopConn() {
+	if a.startResp != nil {
+		a.liveClient.AppEnd(a.startResp.GameInfo.GameID)
+	}
 	if a.wcs != nil {
 		a.wcs.Close()
 		a.wcs = nil
