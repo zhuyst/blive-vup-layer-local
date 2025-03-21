@@ -13,7 +13,7 @@ import (
 	"github.com/vtb-link/bianka/basic"
 	"github.com/vtb-link/bianka/live"
 	"github.com/vtb-link/bianka/proto"
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/exp/slog"
 	"io"
 	"math/rand"
@@ -48,7 +48,7 @@ const (
 	ProbabilityLlmTriggerLevel3      = 0.7             // 30%触发
 )
 
-type App struct {
+type Service struct {
 	cfg        *config.Config
 	liveClient *live.Client
 
@@ -58,7 +58,9 @@ type App struct {
 
 	slog *slog.Logger
 
+	app        *application.App
 	appContext context.Context
+	appCancel  context.CancelFunc
 
 	livingCfg   LiveConfig
 	startResp   *live.AppStartResponse
@@ -77,8 +79,9 @@ type App struct {
 	lastEnterUserTimer          *time.Timer
 }
 
-func (a *App) startup(ctx context.Context) {
-	a.appContext = ctx
+func (s *Service) startup(app *application.App) {
+	s.app = app
+	s.appContext, s.appCancel = context.WithCancel(context.Background())
 
 	const (
 		ConfigProdFilePath = "./etc/config.toml"
@@ -86,38 +89,38 @@ func (a *App) startup(ctx context.Context) {
 	)
 
 	var configFilePath string
-	envInfo := runtime.Environment(ctx)
-	if envInfo.BuildType == "production" {
-		configFilePath = ConfigProdFilePath
-	} else {
+	envInfo := app.Environment()
+	if envInfo.Debug {
 		configFilePath = ConfigDevFilePath
+	} else {
+		configFilePath = ConfigProdFilePath
 	}
 
 	var err error
-	a.cfg, err = config.ParseConfig(configFilePath)
+	s.cfg, err = config.ParseConfig(configFilePath)
 	if err != nil {
 		log.Fatalf("failed to parse config file: %v", err)
 		return
 	}
 
-	a.TTS, err = tts.NewTTS(a.cfg.AliyunTTS)
+	s.TTS, err = tts.NewTTS(s.cfg.AliyunTTS)
 	if err != nil {
 		log.Fatalf("tts.NewTTS err: %v", err)
 		return
 	}
 
-	a.Dao, err = dao.NewDao(a.cfg.DbPath)
+	s.Dao, err = dao.NewDao(s.cfg.DbPath)
 	if err != nil {
 		log.Fatalf("dao.NewDao err: %v", err)
 		return
 	}
 
-	a.liveClient = live.NewClient(live.NewConfig(a.cfg.BiliBili.AccessKey, a.cfg.BiliBili.SecretKey, a.cfg.BiliBili.AppId))
-	a.LLM = llm.NewLLM(a.cfg.QianFan)
+	s.liveClient = live.NewClient(live.NewConfig(s.cfg.BiliBili.AccessKey, s.cfg.BiliBili.SecretKey, s.cfg.BiliBili.AppId))
+	s.LLM = llm.NewLLM(s.cfg.QianFan)
 }
 
-func NewApp(logWriter io.Writer) *App {
-	return &App{
+func NewService(logWriter io.Writer) *Service {
+	return &Service{
 		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
 
 		livingCfg: LiveConfig{
@@ -146,62 +149,62 @@ type ChatMessage struct {
 	Timestamp time.Time
 }
 
-func (a *App) InitConn(initData *InitRequestData) *Result {
-	a.livingCfg = initData.Config
-	a.writeResultOK(ResultTypeConfig, a.livingCfg)
+func (s *Service) InitConn(initData *InitRequestData) *Result {
+	s.livingCfg = initData.Config
+	s.writeResultOK(ResultTypeConfig, s.livingCfg)
 
-	a.init(initData.Code)
+	s.init(initData.Code)
 
 	return BuildResultOk(nil)
 }
 
-func (a *App) SetConfig(configData LiveConfig) *Result {
-	a.livingCfg = configData
-	return BuildResultOk(a.livingCfg)
+func (s *Service) SetConfig(configData LiveConfig) *Result {
+	s.livingCfg = configData
+	return BuildResultOk(s.livingCfg)
 }
 
-func (a *App) pushTTS(params *tts.NewTaskParams, force bool) {
-	if !a.isLiving && !force {
+func (s *Service) pushTTS(params *tts.NewTaskParams, force bool) {
+	if !s.isLiving && !force {
 		return
 	}
-	if err := a.ttsQueue.Push(params); err != nil {
-		a.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+	if err := s.ttsQueue.Push(params); err != nil {
+		s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 	}
 }
 
-func (a *App) init(code string) {
-	if a.startResp != nil {
-		a.writeResultOK(ResultTypeRoom, &RoomData{
-			RoomID: a.startResp.AnchorInfo.RoomID,
-			Uname:  a.startResp.AnchorInfo.Uname,
-			UFace:  a.startResp.AnchorInfo.UFace,
+func (s *Service) init(code string) {
+	if s.startResp != nil {
+		s.writeResultOK(ResultTypeRoom, &RoomData{
+			RoomID: s.startResp.AnchorInfo.RoomID,
+			Uname:  s.startResp.AnchorInfo.Uname,
+			UFace:  s.startResp.AnchorInfo.UFace,
 		})
 		return
 	}
 
 	log.Infof("init code: %s", code)
-	startResp, err := a.liveClient.AppStart(code)
+	startResp, err := s.liveClient.AppStart(code)
 	if err != nil {
-		a.writeResultError(ResultTypeRoom, http.StatusBadRequest, err.Error())
+		s.writeResultError(ResultTypeRoom, http.StatusBadRequest, err.Error())
 		return
 	}
-	a.startResp = startResp
+	s.startResp = startResp
 
-	a.connContext, a.connCancel = context.WithCancel(a.appContext)
+	s.connContext, s.connCancel = context.WithCancel(s.appContext)
 
-	a.tk = time.NewTicker(time.Second * 20)
+	s.tk = time.NewTicker(time.Second * 20)
 	go func() {
 		for {
 			select {
-			case <-a.appContext.Done():
+			case <-s.appContext.Done():
 				return
-			case <-a.tk.C:
+			case <-s.tk.C:
 				// 心跳
-				if err := a.liveClient.AppHeartbeat(startResp.GameInfo.GameID); err != nil {
+				if err := s.liveClient.AppHeartbeat(startResp.GameInfo.GameID); err != nil {
 					log.Errorf("Heartbeat fail, err: %v", err)
-					a.connCancel()
-					a.StopConn()
-					go a.init(code)
+					s.connCancel()
+					s.StopConn()
+					go s.init(code)
 					return
 				}
 			}
@@ -225,71 +228,71 @@ func (a *App) init(code string) {
 		err := wcs.Reconnection(startResp)
 		if err != nil {
 			log.Errorf("Reconnection fail, err: %v", err)
-			a.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
-			a.connCancel()
-			a.StopConn()
-			go a.init(code)
+			s.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
+			s.connCancel()
+			s.StopConn()
+			go s.init(code)
 			return
 		}
 	}
 
-	a.lastEnterUser = nil
-	a.lastEnterUserTimer = time.NewTimer(LastEnterUserDuration)
+	s.lastEnterUser = nil
+	s.lastEnterUserTimer = time.NewTimer(LastEnterUserDuration)
 
-	a.ttsQueue = tts.NewTTSQueue(a.TTS)
-	ttsCh := a.ttsQueue.ListenResult()
+	s.ttsQueue = tts.NewTTSQueue(s.TTS)
+	ttsCh := s.ttsQueue.ListenResult()
 	go func() {
 		for r := range ttsCh {
 			if err := r.Err; err != nil {
-				a.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 				continue
 			}
-			a.writeResultOK(ResultTypeTTS, map[string]interface{}{
+			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
 				"audio_file_path": r.Fname,
 			})
-			a.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
 		}
 	}()
 	go func() {
 		for r := range ttsCh {
 			if err := r.Err; err != nil {
-				a.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 				continue
 			}
-			a.writeResultOK(ResultTypeTTS, map[string]interface{}{
+			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
 				"audio_file_path": r.Fname,
 			})
-			a.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
 		}
 	}()
 	pushTTS := func(params *tts.NewTaskParams, force bool) {
-		if !a.isLiving && !force {
+		if !s.isLiving && !force {
 			return
 		}
-		if err := a.ttsQueue.Push(params); err != nil {
-			a.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+		if err := s.ttsQueue.Push(params); err != nil {
+			s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 		}
 	}
 
 	go func() {
-		for range a.lastEnterUserTimer.C {
-			if a.lastEnterUser == nil {
-				a.lastEnterUserTimer.Reset(LastEnterUserDuration)
+		for range s.lastEnterUserTimer.C {
+			if s.lastEnterUser == nil {
+				s.lastEnterUserTimer.Reset(LastEnterUserDuration)
 				continue
 			}
 			pushTTS(&tts.NewTaskParams{
-				Text: fmt.Sprintf("欢迎%s酱来到直播间", a.lastEnterUser.Uname),
+				Text: fmt.Sprintf("欢迎%s酱来到直播间", s.lastEnterUser.Uname),
 			}, false)
-			a.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
 		}
 	}()
 
-	a.historyMsgLru = expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration)
-	a.llmReplyLru = expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration)
-	a.probabilityLlmTriggerRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
+	s.historyMsgLru = expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration)
+	s.llmReplyLru = expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration)
+	s.probabilityLlmTriggerRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
-	a.isLiving = true
-	a.isLlmProcessing = false
+	s.isLiving = true
+	s.isLlmProcessing = false
 
 	giftTimerMap := make(map[string]*GiftWithTimer)
 	var giftTimerMapMutex sync.RWMutex
@@ -331,11 +334,11 @@ func (a *App) init(code string) {
 						EmojiImgUrl: d.EmojiImgUrl,
 						DmType:      d.DmType,
 					}
-					a.writeResultOK(ResultTypeDanmu, danmuData)
+					s.writeResultOK(ResultTypeDanmu, danmuData)
 
-					go a.setUser(u)
+					go s.setUser(u)
 
-					a.historyMsgLru.Add(d.MsgID, &ChatMessage{
+					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
 						OpenId:    danmuData.OpenID,
 						User:      danmuData.Uname,
 						Message:   danmuData.Msg,
@@ -346,12 +349,12 @@ func (a *App) init(code string) {
 					//if !livingCfg.DisableLlm {
 					//	pitchRate = -100
 					//}
-					a.pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text:      fmt.Sprintf("%s说：%s", d.Uname, d.Msg),
 						PitchRate: pitchRate,
 					}, false)
 
-					if a.isLlmProcessing {
+					if s.isLlmProcessing {
 						break
 					}
 
@@ -360,7 +363,7 @@ func (a *App) init(code string) {
 						danmuData.FansMedalLevel >= LlmReplyFansMedalLevel) || // 带10级粉丝牌
 						danmuData.GuardLevel > 0 || // 舰长
 						(danmuData.Uname == "巫女酱子" || danmuData.Uname == "青云-_-z") {
-						a.startLlmReply(false)
+						s.startLlmReply(false)
 					}
 
 					break
@@ -386,20 +389,20 @@ func (a *App) init(code string) {
 						StartTime: d.StartTime,
 						EndTime:   d.EndTime,
 					}
-					a.writeResultOK(ResultTypeSuperChat, scData)
+					s.writeResultOK(ResultTypeSuperChat, scData)
 
-					go a.setUser(u)
+					go s.setUser(u)
 
-					a.historyMsgLru.Add(d.MsgID, &ChatMessage{
+					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
 						OpenId:    scData.OpenID,
 						User:      scData.Uname,
 						Message:   scData.Msg,
 						Timestamp: time.Now(),
 					})
-					a.pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("谢谢%s酱的醒目留言：%s", d.Uname, d.Message),
 					}, false)
-					a.startLlmReply(true)
+					s.startLlmReply(true)
 					break
 				}
 			case *proto.CmdSendGiftData:
@@ -413,7 +416,7 @@ func (a *App) init(code string) {
 						FansMedalWearingStatus: d.FansMedalWearingStatus,
 						GuardLevel:             d.GuardLevel,
 					}
-					a.writeResultOK(ResultTypeGift, &GiftData{
+					s.writeResultOK(ResultTypeGift, &GiftData{
 						UserData:  u,
 						GiftID:    d.GiftID,
 						GiftName:  d.GiftName,
@@ -432,7 +435,7 @@ func (a *App) init(code string) {
 						},
 					})
 
-					go a.setUser(u)
+					go s.setUser(u)
 
 					key := fmt.Sprintf("%s-%d", d.OpenID, d.GiftID)
 
@@ -464,7 +467,7 @@ func (a *App) init(code string) {
 						giftTimerMapMutex.Unlock()
 
 						giftNum := atomic.LoadInt32(&gt.GiftNum)
-						a.pushTTS(&tts.NewTaskParams{
+						s.pushTTS(&tts.NewTaskParams{
 							Text: fmt.Sprintf("谢谢%s酱赠送的%d个%s 么么哒", gt.Uname, giftNum, gt.GiftName),
 						}, false)
 					}(gt)
@@ -481,7 +484,7 @@ func (a *App) init(code string) {
 						FansMedalWearingStatus: d.FansMedalWearingStatus,
 						GuardLevel:             d.GuardLevel,
 					}
-					a.writeResultOK(ResultTypeGuard, &GuardData{
+					s.writeResultOK(ResultTypeGuard, &GuardData{
 						UserData:   u,
 						GuardLevel: d.GuardLevel,
 						GuardNum:   d.GuardNum,
@@ -489,9 +492,9 @@ func (a *App) init(code string) {
 						Timestamp:  d.Timestamp,
 						MsgID:      d.MsgID,
 					})
-					go a.setUser(u)
+					go s.setUser(u)
 					guardName := getGuardLevelName(d.GuardLevel)
-					a.pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("谢谢%s酱赠送的%d个%s%s，么么哒", d.UserInfo.Uname, d.GuardNum, d.GuardUnit, guardName),
 					}, false)
 					break
@@ -501,7 +504,7 @@ func (a *App) init(code string) {
 					pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("主人开始直播啦，弹幕姬启动！直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
-					a.isLiving = true
+					s.isLiving = true
 					break
 				}
 			case *proto.CmdLiveEndData:
@@ -509,7 +512,7 @@ func (a *App) init(code string) {
 					pushTTS(&tts.NewTaskParams{
 						Text: "主人直播结束啦，今天辛苦了！",
 					}, true)
-					a.isLiving = false
+					s.isLiving = false
 					break
 				}
 			case *proto.CmdLiveRoomEnterData:
@@ -519,15 +522,15 @@ func (a *App) init(code string) {
 						Uname:  d.Uname,
 						UFace:  d.Uface,
 					}
-					a.writeResultOK(ResultTypeEnterRoom, &RoomEnterData{
+					s.writeResultOK(ResultTypeEnterRoom, &RoomEnterData{
 						UserData:  u,
 						Timestamp: d.Timestamp,
 					})
 
-					a.lastEnterUser = &u
+					s.lastEnterUser = &u
 
 					go func(openId string) {
-						u, err := a.Dao.GetUser(context.Background(), openId)
+						u, err := s.Dao.GetUser(context.Background(), openId)
 						if err != nil {
 							log.Errorf("GetUser open_id: %s err: %v", openId, err)
 							return
@@ -537,7 +540,7 @@ func (a *App) init(code string) {
 							return
 						}
 
-						if a.livingCfg.DisableWelcomeLimit ||
+						if s.livingCfg.DisableWelcomeLimit ||
 							(u.FansMedalWearingStatus && u.FansMedalLevel >= RoomEnterTTSFansMedalLevel) ||
 							u.GuardLevel > 0 {
 
@@ -564,7 +567,7 @@ func (a *App) init(code string) {
 				}
 			case *proto.CmdInteractWordData:
 				{
-					a.writeResultOK(ResultTypeInteractWord, &InteractWordData{
+					s.writeResultOK(ResultTypeInteractWord, &InteractWordData{
 						MsgID:     d.MsgID,
 						OpenID:    d.OpenID,
 						RoomID:    d.RoomID,
@@ -592,35 +595,35 @@ func (a *App) init(code string) {
 		},
 	}
 
-	a.wcs, err = basic.StartWebsocket(
+	s.wcs, err = basic.StartWebsocket(
 		startResp,
 		dispatcherHandleMap,
 		onCloseHandle,
-		a.slog,
+		s.slog,
 	)
 	if err != nil {
 		log.Errorf("basic.StartWebsocket err: %v", err)
-		a.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
+		s.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
 		return
 	}
 
 	log.Infof("room_info: %v", startResp.AnchorInfo)
-	a.writeResultOK(ResultTypeRoom, &RoomData{
+	s.writeResultOK(ResultTypeRoom, &RoomData{
 		RoomID: startResp.AnchorInfo.RoomID,
 		Uname:  startResp.AnchorInfo.Uname,
 		UFace:  startResp.AnchorInfo.UFace,
 	})
 }
 
-func (a *App) startLlmReply(force bool) {
-	if !a.isLiving || a.livingCfg.DisableLlm {
+func (s *Service) startLlmReply(force bool) {
+	if !s.isLiving || s.livingCfg.DisableLlm {
 		return
 	}
 
 	var msgs []*ChatMessage
 	userMap := map[string]struct{}{}
 	probabilityLlmTriggerCounter := -1 // 当前尝试触发的用户不算，所以初始值为-1
-	for _, msg := range a.historyMsgLru.Values() {
+	for _, msg := range s.historyMsgLru.Values() {
 		if time.Since(msg.Timestamp) <= LlmHistoryDuration {
 			msgs = append(msgs, msg)
 		}
@@ -633,7 +636,7 @@ func (a *App) startLlmReply(force bool) {
 	}
 
 	if !force {
-		llmReplyLruLen := a.llmReplyLru.Len()
+		llmReplyLruLen := s.llmReplyLru.Len()
 		if llmReplyLruLen >= LlmReplyLimitCount {
 			log.Infof("disable llm by reply count: %d", llmReplyLruLen)
 			return
@@ -659,7 +662,7 @@ func (a *App) startLlmReply(force bool) {
 			probability = ProbabilityLlmTriggerLevel1
 		}
 
-		r := a.probabilityLlmTriggerRandom.Float64()
+		r := s.probabilityLlmTriggerRandom.Float64()
 		fmt.Printf("r: %.2f, probability: %.2f\n", r, probability)
 		if r <= probability {
 			log.Infof("disable llm by probability: %.2f, counter: %d, compare: %.2f", r, probabilityLlmTriggerCounter, probability)
@@ -667,10 +670,10 @@ func (a *App) startLlmReply(force bool) {
 		}
 	}
 
-	a.isLlmProcessing = true
+	s.isLlmProcessing = true
 	go func(msgs []*ChatMessage) {
 		defer func() {
-			a.isLlmProcessing = false
+			s.isLlmProcessing = false
 		}()
 
 		llmMsgs := make([]*llm.ChatMessage, len(msgs))
@@ -680,53 +683,56 @@ func (a *App) startLlmReply(force bool) {
 				Message: msg.Message,
 			}
 		}
-		llmRes, err := a.LLM.ChatWithLLM(context.Background(), llmMsgs)
+		llmRes, err := s.LLM.ChatWithLLM(context.Background(), llmMsgs)
 		if err != nil {
-			a.writeResultError(ResultTypeLLM, CodeInternalError, err.Error())
+			s.writeResultError(ResultTypeLLM, CodeInternalError, err.Error())
 			log.Errorf("ChatWithLLM err: %v", err)
 			return
 		}
-		a.writeResultOK(ResultTypeLLM, map[string]interface{}{
+		s.writeResultOK(ResultTypeLLM, map[string]interface{}{
 			"llm_result": llmRes,
 		})
-		a.llmReplyLru.Add(uuid.NewV4().String(), struct{}{})
-		a.pushTTS(&tts.NewTaskParams{
+		s.llmReplyLru.Add(uuid.NewV4().String(), struct{}{})
+		s.pushTTS(&tts.NewTaskParams{
 			Text: llmRes,
 		}, false)
 	}(msgs)
 }
 
-func (a *App) StopConn() {
-	if a.startResp != nil {
-		a.liveClient.AppEnd(a.startResp.GameInfo.GameID)
+func (s *Service) StopConn() {
+	if s.appCancel != nil {
+		s.appCancel()
 	}
-	if a.wcs != nil {
-		a.wcs.Close()
-		a.wcs = nil
+	if s.startResp != nil {
+		s.liveClient.AppEnd(s.startResp.GameInfo.GameID)
 	}
-	a.startResp = nil
-	a.connContext = nil
-	if a.connCancel != nil {
-		a.connCancel()
-		a.connCancel = nil
+	if s.wcs != nil {
+		s.wcs.Close()
+		s.wcs = nil
 	}
-	if a.tk != nil {
-		a.tk.Stop()
-		a.tk = nil
+	s.startResp = nil
+	s.connContext = nil
+	if s.connCancel != nil {
+		s.connCancel()
+		s.connCancel = nil
 	}
-	a.lastEnterUser = nil
-	if a.lastEnterUserTimer != nil {
-		a.lastEnterUserTimer.Stop()
-		a.lastEnterUserTimer = nil
+	if s.tk != nil {
+		s.tk.Stop()
+		s.tk = nil
 	}
-	if a.ttsQueue != nil {
-		a.ttsQueue.Close()
-		a.ttsQueue = nil
+	s.lastEnterUser = nil
+	if s.lastEnterUserTimer != nil {
+		s.lastEnterUserTimer.Stop()
+		s.lastEnterUserTimer = nil
+	}
+	if s.ttsQueue != nil {
+		s.ttsQueue.Close()
+		s.ttsQueue = nil
 	}
 }
 
-func (a *App) setUser(userData UserData) {
-	err := a.Dao.CreateOrUpdateUser(context.Background(), &dao.User{
+func (s *Service) setUser(userData UserData) {
+	err := s.Dao.CreateOrUpdateUser(context.Background(), &dao.User{
 		OpenID:                 userData.OpenID,
 		FansMedalWearingStatus: userData.FansMedalWearingStatus,
 		FansMedalLevel:         userData.FansMedalLevel,

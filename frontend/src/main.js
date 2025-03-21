@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { createPinia } from 'pinia'
+import '@/assets/main.scss'
 // import router from './router'
 
 const app = createApp(App)
@@ -15,7 +16,7 @@ app.mount('#app')
 function setRootFontSize() {
   const screenWidth = window.innerWidth
   const baseFontSize = 16 // 基准字体大小
-  const scale = screenWidth / 1280 // 假设设计稿宽度为 1920px
+  const scale = screenWidth / 1600
   document.documentElement.style.fontSize = `${baseFontSize * scale}px`
 }
 

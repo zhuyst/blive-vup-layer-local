@@ -10,22 +10,22 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      '#': fileURLToPath(new URL('./wailsjs', import.meta.url))
+      '#': fileURLToPath(new URL('./bindings/blive-vup-layer', import.meta.url))
     }
   },
   server: {
     proxy: {
       '/result/': {
         bypass: function () {
-          return false;
-        },
-      },
-    },
+          return false
+        }
+      }
+    }
   },
   css: {
     preprocessorOptions: {
       scss: {
-        additionalData: '@import "@/assets/main.scss";'
+        additionalData: '@import "@/assets/global.scss";'
       }
     }
   }

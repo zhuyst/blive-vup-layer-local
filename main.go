@@ -2,17 +2,16 @@ package main
 
 import (
 	"blive-vup-layer/config"
-	"context"
 	"embed"
+	_ "embed"
 	"fmt"
 	log "github.com/sirupsen/logrus"
-	"github.com/wailsapp/wails/v2"
-	"github.com/wailsapp/wails/v2/pkg/options"
-	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"io"
 	"net/http"
 	"os"
 	"path"
+	"runtime/debug"
 	"strings"
 	"time"
 )
@@ -20,20 +19,26 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-type ResultFileLoader struct {
-	http.Handler
+type FileServerFS struct {
+	applicationAssetFileServerFS http.Handler
 }
 
-func (h *ResultFileLoader) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func NewFileServerFS() http.Handler {
+	return &FileServerFS{
+		applicationAssetFileServerFS: application.AssetFileServerFS(assets),
+	}
+}
+
+func (fs *FileServerFS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !strings.HasPrefix(r.URL.Path, "/result/") {
-		w.WriteHeader(http.StatusNotFound)
+		fs.applicationAssetFileServerFS.ServeHTTP(w, r)
 		return
 	}
 	fileName := strings.TrimPrefix(r.URL.Path, "/result/")
 	filePath := path.Join(config.ResultFilePath, fileName)
 	f, err := os.ReadFile(filePath)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
+		fs.applicationAssetFileServerFS.ServeHTTP(w, r)
 		log.Errorf("fileName: %s, filePath: %s not found", fileName, filePath)
 		return
 	}
@@ -62,29 +67,48 @@ func main() {
 		return
 	}
 
-	app := NewApp(logWriter)
-	if err := wails.Run(&options.App{
-		Title:  "巫女酱子弹幕姬",
-		Width:  1600,
-		Height: 900,
-		AssetServer: &assetserver.Options{
-			Assets:  assets,
-			Handler: &ResultFileLoader{},
+	service := NewService(logWriter)
+
+	var mainWindow *application.WebviewWindow
+	app := application.New(application.Options{
+		Name:        "巫女酱子弹幕姬",
+		Description: "巫女酱子弹幕姬",
+		Services: []application.Service{
+			application.NewService(service),
 		},
-		BackgroundColour: &options.RGBA{R: 255, G: 255, B: 255, A: 0},
-		OnStartup:        app.startup,
-		OnShutdown: func(ctx context.Context) {
-			app.StopConn()
+		Assets: application.AssetOptions{
+			Handler: NewFileServerFS(),
 		},
-		Bind: []interface{}{
-			app,
+		Windows: application.WindowsOptions{
+			WebviewUserDataPath: "./tmp/",
 		},
-		// Windows: &windows.Options{
-		// 	WebviewIsTransparent: true,
-		// 	WindowIsTranslucent:  true,
-		// },
-		//Frameless: true,
-	}); err != nil {
-		log.Errorf("wails.Run err: %v", err)
+		OnShutdown: func() {
+			service.StopConn()
+		},
+		SingleInstance: &application.SingleInstanceOptions{
+			UniqueID: "com.mikocat.blive-vup-layer",
+			OnSecondInstanceLaunch: func(_ application.SecondInstanceData) {
+				if mainWindow != nil {
+					mainWindow.Restore()
+					mainWindow.Focus()
+				}
+			},
+		},
+		PanicHandler: func(err any) {
+			log.Errorf("panic: %s, stack: %s", err, string(debug.Stack()))
+		},
+	})
+	service.startup(app)
+
+	mainWindow = app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+		Title:            "巫女酱子弹幕姬-总控台",
+		Width:            1600,
+		Height:           900,
+		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
+		URL:              "/",
+	})
+
+	if err := app.Run(); err != nil {
+		log.Fatal(err)
 	}
 }

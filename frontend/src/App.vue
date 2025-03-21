@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, reactive } from 'vue'
-import { EventsOn } from '#/runtime'
-import { InitConn, SetConfig, StopConn } from '#/go/main/App'
+import { Events } from '@wailsio/runtime'
+import { InitConn, SetConfig, StopConn } from '#/service'
 import { useStore } from '@/store/live'
 // import Membership from '@/component/Membership.vue'
 import DanmuList from '@/component/DanmuList.vue'
@@ -63,9 +63,19 @@ function handleReenterCode() {
 }
 
 const store = useStore()
-const { sendMemberShip, sendDanmu, sendSc, sendGift, sendTTS, sendLLM, sendEnterRoom, sendInteractWord } = store
+const {
+  sendMemberShip,
+  sendDanmu,
+  sendSc,
+  sendGift,
+  sendTTS,
+  sendLLM,
+  sendEnterRoom,
+  sendInteractWord
+} = store
 
-EventsOn('room', async function(data) {
+Events.On('room', async function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
 
   if (data.code !== 0) {
@@ -78,7 +88,7 @@ EventsOn('room', async function(data) {
         type: 'init',
         data: {
           code: state.code,
-          config: state.cfg,
+          config: state.cfg
         }
       })
     }, 5000)
@@ -88,37 +98,45 @@ EventsOn('room', async function(data) {
   state.connect_message = '连接成功'
   console.log('[直播间]房间连接成功, 房间信息：', data.data)
   state.room_info = data.data
-  localStorage.setItem('savedCode', state.code);
+  localStorage.setItem('savedCode', state.code)
 })
-EventsOn('danmu', function(data) {
+Events.On('danmu', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendDanmu(data.data)
 })
-EventsOn('superchat', function(data) {
+Events.On('superchat', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendSc(data.data)
 })
-EventsOn('gift', function(data) {
+Events.On('gift', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendGift(data.data)
 })
-EventsOn('guard', function(data) {
+Events.On('guard', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendMemberShip(data.data)
 })
-EventsOn('tts', function(data) {
+Events.On('tts', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendTTS(data.data)
 })
-EventsOn('llm', function(data) {
+Events.On('llm', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendLLM(data.data)
 })
-EventsOn('enter_room', function(data) {
+Events.On('enter_room', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendEnterRoom(data.data)
 })
-EventsOn('interact_word', function(data) {
+Events.On('interact_word', function (event) {
+  const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendInteractWord(data.data)
 })
@@ -163,10 +181,10 @@ onMounted(() => {
     state.cfg.disable_welcome_limit = savedDisableWelcomeLimit === 'true'
   }
 
-  const savedCode = localStorage.getItem('savedCode');
+  const savedCode = localStorage.getItem('savedCode')
   if (savedCode) {
-    state.code = savedCode;
-    connectWebSocketServer();
+    state.code = savedCode
+    connectWebSocketServer()
   } else {
     state.show_popup = true
   }
@@ -175,11 +193,11 @@ onMounted(() => {
 
 <template>
   <main>
-    <Popup 
-      v-if="state.show_popup" 
-      @confirm="handleConfirm" 
-      @close="state.show_popup = false" 
-      v-model="state.code" 
+    <Popup
+      v-if="state.show_popup"
+      @confirm="handleConfirm"
+      @close="state.show_popup = false"
+      v-model="state.code"
     />
     <div class="test-buttons" v-if="!state.show_popup && state.is_test">
       <button class="button" @click="sendDanmu()">有人发弹幕</button>
@@ -207,7 +225,7 @@ onMounted(() => {
           </div>
           <div class="status-msg">{{ state.connect_message }}</div>
           <button @click="handleReenterCode">重新输入身份码</button>
-          <br/>
+          <br />
           <input
             type="checkbox"
             id="disable_llm"
@@ -215,7 +233,7 @@ onMounted(() => {
             @change="handleDisableLlmChange"
           />
           <label for="disable_llm">关闭大模型</label>
-          <br/>
+          <br />
           <input
             type="checkbox"
             id="disable_welcome_limit"
