@@ -18,6 +18,8 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"os"
+	"path"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -128,6 +130,19 @@ func NewService(logWriter io.Writer) *Service {
 			DisableWelcomeLimit: false,
 		},
 	}
+}
+
+func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fileName := r.URL.Path
+	filePath := path.Join(config.ResultFilePath, fileName)
+	f, err := os.ReadFile(filePath)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+		log.Errorf("fileName: %s, filePath: %s not found", fileName, filePath)
+		return
+	}
+
+	w.Write(f)
 }
 
 type GiftWithTimer struct {

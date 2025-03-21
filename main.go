@@ -8,43 +8,13 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"io"
-	"net/http"
 	"os"
-	"path"
 	"runtime/debug"
-	"strings"
 	"time"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
-
-type FileServerFS struct {
-	applicationAssetFileServerFS http.Handler
-}
-
-func NewFileServerFS() http.Handler {
-	return &FileServerFS{
-		applicationAssetFileServerFS: application.AssetFileServerFS(assets),
-	}
-}
-
-func (fs *FileServerFS) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if !strings.HasPrefix(r.URL.Path, "/result/") {
-		fs.applicationAssetFileServerFS.ServeHTTP(w, r)
-		return
-	}
-	fileName := strings.TrimPrefix(r.URL.Path, "/result/")
-	filePath := path.Join(config.ResultFilePath, fileName)
-	f, err := os.ReadFile(filePath)
-	if err != nil {
-		fs.applicationAssetFileServerFS.ServeHTTP(w, r)
-		log.Errorf("fileName: %s, filePath: %s not found", fileName, filePath)
-		return
-	}
-
-	w.Write(f)
-}
 
 func main() {
 	log.SetFormatter(&log.JSONFormatter{})
@@ -74,10 +44,12 @@ func main() {
 		Name:        "巫女酱子弹幕姬",
 		Description: "巫女酱子弹幕姬",
 		Services: []application.Service{
-			application.NewService(service),
+			application.NewService(service, application.ServiceOptions{
+				Route: "/result/",
+			}),
 		},
 		Assets: application.AssetOptions{
-			Handler: NewFileServerFS(),
+			Handler: application.AssetFileServerFS(assets),
 		},
 		Windows: application.WindowsOptions{
 			WebviewUserDataPath: "./tmp/",
