@@ -1,0 +1,16 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="924"
+    height="166"
+    viewBox="0 0 924 166"
+    fill="none"
+>
+    <path
+        d="M2 132V2H844L922 80V164H34L2 132Z"
+        fill="black"
+        fill-opacity="0.6"
+        stroke="white"
+        stroke-opacity="0.6"
+        stroke-width="3"
+    />
+</svg>

@@ -13,7 +13,6 @@ import (
 	"github.com/vtb-link/bianka/basic"
 	"github.com/vtb-link/bianka/live"
 	"github.com/vtb-link/bianka/proto"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/exp/slog"
 	"io"
 	"math/rand"
@@ -60,7 +59,7 @@ type Service struct {
 
 	slog *slog.Logger
 
-	app        *application.App
+	app        *App
 	appContext context.Context
 	appCancel  context.CancelFunc
 
@@ -81,7 +80,7 @@ type Service struct {
 	lastEnterUserTimer          *time.Timer
 }
 
-func (s *Service) startup(app *application.App) {
+func (s *Service) startup(app *App) {
 	s.app = app
 	s.appContext, s.appCancel = context.WithCancel(context.Background())
 
@@ -91,7 +90,7 @@ func (s *Service) startup(app *application.App) {
 	)
 
 	var configFilePath string
-	envInfo := app.Environment()
+	envInfo := app.App.Environment()
 	if envInfo.Debug {
 		configFilePath = ConfigDevFilePath
 	} else {
@@ -158,8 +157,7 @@ type LiveConfig struct {
 }
 
 type ChatMessage struct {
-	OpenId    string
-	User      string
+	User      *UserData
 	Message   string
 	Timestamp time.Time
 }
@@ -354,8 +352,7 @@ func (s *Service) init(code string) {
 					go s.setUser(u)
 
 					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
-						OpenId:    danmuData.OpenID,
-						User:      danmuData.Uname,
+						User:      &u,
 						Message:   danmuData.Msg,
 						Timestamp: time.Now(),
 					})
@@ -409,8 +406,7 @@ func (s *Service) init(code string) {
 					go s.setUser(u)
 
 					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
-						OpenId:    scData.OpenID,
-						User:      scData.Uname,
+						User:      &u,
 						Message:   scData.Msg,
 						Timestamp: time.Now(),
 					})
@@ -499,16 +495,18 @@ func (s *Service) init(code string) {
 						FansMedalWearingStatus: d.FansMedalWearingStatus,
 						GuardLevel:             d.GuardLevel,
 					}
+					guardName := getGuardLevelName(d.GuardLevel)
 					s.writeResultOK(ResultTypeGuard, &GuardData{
 						UserData:   u,
+						Rmb:        float64(d.Price) / 1000,
 						GuardLevel: d.GuardLevel,
 						GuardNum:   d.GuardNum,
 						GuardUnit:  d.GuardUnit,
+						GuardName:  guardName,
 						Timestamp:  d.Timestamp,
 						MsgID:      d.MsgID,
 					})
 					go s.setUser(u)
-					guardName := getGuardLevelName(d.GuardLevel)
 					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("谢谢%s酱赠送的%d个%s%s，么么哒", d.UserInfo.Uname, d.GuardNum, d.GuardUnit, guardName),
 					}, false)
@@ -539,6 +537,7 @@ func (s *Service) init(code string) {
 					}
 					s.writeResultOK(ResultTypeEnterRoom, &RoomEnterData{
 						UserData:  u,
+						MsgID:     uuid.NewV4().String(),
 						Timestamp: d.Timestamp,
 					})
 
@@ -643,7 +642,7 @@ func (s *Service) startLlmReply(force bool) {
 			msgs = append(msgs, msg)
 		}
 		if time.Since(msg.Timestamp) <= DisableLlmByUserCountDuration {
-			userMap[msg.OpenId] = struct{}{}
+			userMap[msg.User.OpenID] = struct{}{}
 		}
 		if time.Since(msg.Timestamp) <= ProbabilityLlmTriggerDuration {
 			probabilityLlmTriggerCounter++
@@ -692,11 +691,13 @@ func (s *Service) startLlmReply(force bool) {
 		}()
 
 		llmMsgs := make([]*llm.ChatMessage, len(msgs))
+		var lastMsg *ChatMessage
 		for i, msg := range msgs {
 			llmMsgs[i] = &llm.ChatMessage{
-				User:    msg.User,
+				User:    msg.User.Uname,
 				Message: msg.Message,
 			}
+			lastMsg = msg
 		}
 		llmRes, err := s.LLM.ChatWithLLM(context.Background(), llmMsgs)
 		if err != nil {
@@ -704,8 +705,11 @@ func (s *Service) startLlmReply(force bool) {
 			log.Errorf("ChatWithLLM err: %v", err)
 			return
 		}
-		s.writeResultOK(ResultTypeLLM, map[string]interface{}{
-			"llm_result": llmRes,
+		s.writeResultOK(ResultTypeLLM, LLMResult{
+			UserData:    *lastMsg.User,
+			MsgID:       uuid.NewV4().String(),
+			UserMessage: lastMsg.Message,
+			LLMResult:   llmRes,
 		})
 		s.llmReplyLru.Add(uuid.NewV4().String(), struct{}{})
 		s.pushTTS(&tts.NewTaskParams{

@@ -148,15 +148,7 @@ function handleRichText(text) {
 
 export const useStore = defineStore('live', {
   state: () => ({
-    is_connect_websocket: false,
-    is_connect_room: false,
-    connect_message: '正在连接至直播间',
-
-    room_info: {
-      room_id: 0,
-      uname: '',
-      uface: noFaceSrc
-    },
+    is_test: false,
 
     membership_list: [],
     display_membership: {
@@ -172,18 +164,34 @@ export const useStore = defineStore('live', {
     sc_list: [],
     gift_list: [],
     tts_list: [],
-    enter_room_list: []
+    enter_room_list: [],
+    llm_list: [],
+    interact_word_list: []
   }),
   actions: {
+    setIsTest(is_test) {
+      this.is_test = is_test
+    },
     sendMemberShip(data) {
       if (!data) {
         data = {
+          msg_id: getUUID(),
           uname: '青云',
-          uface: noFaceSrc
+          uface: noFaceSrc,
+
+          fans_medal_name: '巫女酱',
+          fans_medal_level: 21,
+          fans_medal_wearing_status: true,
+
+          guard_level: 1,
+          guard_num: 5,
+          guard_unit: '月',
+          guard_name: '提督',
+          rmb: 100
         }
       }
       this.membership_list.push(data)
-      this.consumeMemberShipList()
+      // this.consumeMemberShipList()
     },
     consumeMemberShipList() {
       if (this.display_membership.playing) {
@@ -246,6 +254,8 @@ export const useStore = defineStore('live', {
           fans_medal_level: 21,
           fans_medal_wearing_status: true,
 
+          rmb: 10,
+
           msg: '醒目留言内容' + msg_id,
           start_time: 1 * 1000,
           end_time: 5 * 1000,
@@ -261,22 +271,22 @@ export const useStore = defineStore('live', {
       data.rich_text = handleRichText(data.msg)
       this.sc_list.push(data)
 
-      setTimeout(async () => {
-        for (let i = 0; i < this.sc_list.length; i++) {
-          if (this.sc_list[i].msg_id === msg_id) {
-            this.sc_list[i].fade_out = true
+      // setTimeout(async () => {
+      //   for (let i = 0; i < this.sc_list.length; i++) {
+      //     if (this.sc_list[i].msg_id === msg_id) {
+      //       this.sc_list[i].fade_out = true
 
-            setTimeout(() => {
-              for (let i = 0; i < this.sc_list.length; i++) {
-                if (this.sc_list[i].msg_id === msg_id) {
-                  this.sc_list.splice(i, 1)
-                }
-              }
-            }, 1000)
-            break
-          }
-        }
-      }, data.end_time - data.start_time)
+      //       setTimeout(() => {
+      //         for (let i = 0; i < this.sc_list.length; i++) {
+      //           if (this.sc_list[i].msg_id === msg_id) {
+      //             this.sc_list.splice(i, 1)
+      //           }
+      //         }
+      //       }, 1000)
+      //       break
+      //     }
+      //   }
+      // }, data.end_time - data.start_time)
     },
     sendGift(data) {
       if (!data) {
@@ -305,9 +315,22 @@ export const useStore = defineStore('live', {
       this.tts_list.push(data)
     },
     sendLLM(data) {
-      const msg_id = getUUID()
+      if (!data) {
+        data = {
+          msg_id: getUUID(),
+          uname: '青云',
+          uface: noFaceSrc,
+
+          fans_medal_name: '巫女酱',
+          fans_medal_level: 216,
+          fans_medal_wearing_status: true,
+
+          user_message: '用户输入内容',
+          llm_result: '大模型返回内容'
+        }
+      }
       const danmu_data = {
-        msg_id: msg_id,
+        msg_id: data.msg_id,
         uname: '小助手',
         uface: noFaceSrc,
 
@@ -318,14 +341,31 @@ export const useStore = defineStore('live', {
         msg: data.llm_result
       }
       this.sendDanmu(danmu_data)
+      this.llm_list.push(data)
     },
     sendEnterRoom(data) {
+      if (!data) {
+        data = {
+          msg_id: getUUID(),
+          uname: '青云',
+
+          fans_medal_name: '未知',
+          fans_medal_level: 0,
+          fans_medal_wearing_status: false
+        }
+      }
       this.enter_room_list.push(data)
     },
     sendInteractWord(data) {
-      const msg_id = getUUID()
+      if (!data) {
+        data = {
+          msg_id: getUUID(),
+          uname: '青云'
+        }
+      }
+
       const danmu_data = {
-        msg_id: msg_id,
+        msg_id: data.msg_id,
         uname: data.uname,
         uface: noFaceSrc,
 
@@ -336,6 +376,7 @@ export const useStore = defineStore('live', {
         msg: '关注了直播间'
       }
       this.sendDanmu(danmu_data)
+      this.interact_word_list.push(data)
     }
   }
 })

@@ -38,5 +38,5 @@ func (s *Service) writeResult(res *EventResult) {
 	} else {
 		log.Errorf("write result type: %s, code: %d, data: %s", res.Type, res.Code, msg)
 	}
-	s.app.EmitEvent(res.Type, res)
+	s.app.App.EmitEvent(res.Type, res)
 }

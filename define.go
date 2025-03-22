@@ -13,6 +13,8 @@ const (
 
 	ResultTypeTTS = "tts"
 	ResultTypeLLM = "llm"
+
+	ResultTypeWindow = "window"
 )
 
 var danmuGiftList = []string{
@@ -111,11 +113,13 @@ type GiftDataComboInfo struct {
 
 type GuardData struct {
 	UserData
-	GuardLevel int    `json:"guard_level"`
-	GuardNum   int    `json:"guard_num"`
-	GuardUnit  string `json:"guard_unit"`
-	MsgID      string `json:"msg_id"`
-	Timestamp  int    `json:"timestamp"`
+	Rmb        float64 `json:"rmb"`
+	GuardLevel int     `json:"guard_level"`
+	GuardNum   int     `json:"guard_num"`
+	GuardUnit  string  `json:"guard_unit"`
+	GuardName  string  `json:"guard_name"`
+	MsgID      string  `json:"msg_id"`
+	Timestamp  int     `json:"timestamp"`
 }
 
 type CmdRoomEnterData struct {
@@ -128,7 +132,8 @@ type CmdRoomEnterData struct {
 
 type RoomEnterData struct {
 	UserData
-	Timestamp int64 `json:"timestamp"`
+	MsgID     string `json:"msg_id"`
+	Timestamp int64  `json:"timestamp"`
 }
 
 type InteractWordData struct {
@@ -143,4 +148,11 @@ var GuardLevelMap = map[int]string{
 	1: "总督",
 	2: "提督",
 	3: "舰长",
+}
+
+type LLMResult struct {
+	UserData
+	MsgID       string `json:"msg_id"`
+	UserMessage string `json:"user_message"`
+	LLMResult   string `json:"llm_result"`
 }

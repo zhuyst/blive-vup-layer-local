@@ -37,6 +37,15 @@ export function SetConfig(configData) {
 }
 
 /**
+ * @param {string} windowID
+ * @returns {Promise<void> & { cancel(): void }}
+ */
+export function ShowWindow(windowID) {
+    let $resultPromise = /** @type {any} */($Call.ByID(3242331696, windowID));
+    return $resultPromise;
+}
+
+/**
  * @returns {Promise<void> & { cancel(): void }}
  */
 export function StopConn() {
