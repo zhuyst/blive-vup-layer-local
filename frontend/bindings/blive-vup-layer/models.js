@@ -51,6 +51,13 @@ export class LiveConfig {
      * @param {Partial<LiveConfig>} [$$source = {}] - The source object to create the LiveConfig.
      */
     constructor($$source = {}) {
+        if (!("disable_tts" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["disable_tts"] = false;
+        }
         if (!("disable_llm" in $$source)) {
             /**
              * @member

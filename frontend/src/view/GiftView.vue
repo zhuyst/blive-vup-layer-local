@@ -9,7 +9,7 @@ const store = useStore()
 const { sendGift } = store
 const { gift_list } = storeToRefs(store)
 
-Events.On('enter_room', function (event) {
+Events.On('gift', function (event) {
   const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendGift(data.data)

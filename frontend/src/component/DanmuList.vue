@@ -57,7 +57,7 @@ export default {
 <style scoped>
 .danmu-list-container {
   width: 100%;
-  height: 80%;
+  height: 75%;
   border: 2px solid rgb(110, 171, 211);
   overflow-y: auto;
   scroll-behavior: smooth;

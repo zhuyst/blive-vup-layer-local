@@ -29,19 +29,25 @@ watch(
 )
 
 const state = reactive({
-  is_dragging: false
+  is_show: false
 })
 
-let diaggingTimer
-const dragging = () => {
-  state.is_dragging = true
-  clearTimeout(diaggingTimer)
-  diaggingTimer = setTimeout(() => {
-    state.is_dragging = false
-  }, 1000)
-}
-Events.On(Events.Types.Windows.WindowDidMove, dragging)
-Events.On(Events.Types.Windows.WindowStartMove, dragging)
+// let diaggingTimer
+// const dragging = () => {
+//   state.is_dragging = true
+//   clearTimeout(diaggingTimer)
+//   diaggingTimer = setTimeout(() => {
+//     state.is_dragging = false
+//   }, 1000)
+// }
+// Events.On(Events.Types.Windows.WindowDidMove, dragging)
+// Events.On(Events.Types.Windows.WindowStartMove, dragging)
+Events.On(Events.Types.Windows.WindowActive, () => {
+  state.is_show = true
+})
+Events.On(Events.Types.Windows.WindowInactive, () => {
+  state.is_show = false
+})
 </script>
 <script>
 export default {
@@ -57,7 +63,7 @@ export default {
     <header
       style="--wails-draggable: drag"
       :class="{
-        'is-show': state.is_dragging
+        'is-show': state.is_show
       }"
     >
       <div class="header-title" @click="$emit('test')">{{ title }}</div>
@@ -119,7 +125,6 @@ header {
     }
   }
 
-  &:hover,
   &.is-show {
     visibility: visible;
     opacity: 1;
@@ -130,7 +135,6 @@ main {
   padding: 2px;
   height: 100vh;
 
-  &:hover,
   &.is-show {
     padding: 0;
     border: 2px solid black;

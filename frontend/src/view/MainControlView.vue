@@ -35,6 +35,7 @@ const state = reactive({
   connect_message: '正在连接至直播间',
 
   cfg: {
+    disable_tts: false,
     disable_llm: false,
     disable_welcome_limit: false
   },
@@ -161,6 +162,12 @@ async function connectWebSocketServer() {
   state.is_connect_room = true
 }
 
+async function handleDisableTTSChange() {
+  console.log('config changed: ', JSON.stringify(state.cfg))
+  await SetConfig(state.cfg)
+  localStorage.setItem('disable_tts', state.cfg.disable_tts)
+}
+
 async function handleDisableLlmChange() {
   console.log('config changed: ', JSON.stringify(state.cfg))
   await SetConfig(state.cfg)
@@ -174,6 +181,11 @@ async function handleDisableWelcomeLimitChange() {
 }
 
 onMounted(() => {
+  const savedDisableTTS = localStorage.getItem('disable_tts')
+  if (savedDisableTTS !== null) {
+    state.cfg.disable_tts = savedDisableTTS === 'true'
+  }
+
   const savedDisableLlm = localStorage.getItem('disable_llm')
   if (savedDisableLlm !== null) {
     state.cfg.disable_llm = savedDisableLlm === 'true'
@@ -228,6 +240,14 @@ onMounted(() => {
           </div>
           <div class="status-msg">{{ state.connect_message }}</div>
           <button @click="handleReenterCode">重新输入身份码</button>
+          <br />
+          <input
+            type="checkbox"
+            id="disable_tts"
+            v-model="state.cfg.disable_tts"
+            @change="handleDisableTTSChange"
+          />
+          <label for="disable_tts">关闭TTS</label>
           <br />
           <input
             type="checkbox"

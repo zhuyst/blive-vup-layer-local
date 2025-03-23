@@ -9,7 +9,7 @@ const store = useStore()
 const { sendMemberShip } = store
 const { membership_list } = storeToRefs(store)
 
-Events.On('membership', function (event) {
+Events.On('guard', function (event) {
   const data = event.data[0]
   console.log('[EventsOn]收到消息：', data)
   sendMemberShip(data.data)

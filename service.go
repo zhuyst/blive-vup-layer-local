@@ -125,6 +125,7 @@ func NewService(logWriter io.Writer) *Service {
 		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
 
 		livingCfg: LiveConfig{
+			DisableTTS:          false,
 			DisableLlm:          false,
 			DisableWelcomeLimit: false,
 		},
@@ -152,6 +153,7 @@ type GiftWithTimer struct {
 }
 
 type LiveConfig struct {
+	DisableTTS          bool `json:"disable_tts"`
 	DisableLlm          bool `json:"disable_llm"`
 	DisableWelcomeLimit bool `json:"disable_welcome_limit"`
 }
@@ -279,7 +281,7 @@ func (s *Service) init(code string) {
 		}
 	}()
 	pushTTS := func(params *tts.NewTaskParams, force bool) {
-		if !s.isLiving && !force {
+		if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
 			return
 		}
 		if err := s.ttsQueue.Push(params); err != nil {

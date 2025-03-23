@@ -80,12 +80,6 @@ func main() {
 
 	systemTray := app.NewSystemTray()
 	systemTray.SetLabel(Name)
-	//iconBytes, err := iconFS.ReadFile("build/appicon.png")
-	//if err != nil {
-	//	log.Fatalf("failed to load icon: %v", err)
-	//	return
-	//}
-	//systemTray.SetIcon(iconBytes)
 	systemTrayMenu := app.NewMenu()
 
 	a := &App{
@@ -99,8 +93,12 @@ func main() {
 		Title:            fmt.Sprintf("%s - 总控台", Name),
 		Width:            1600,
 		Height:           900,
+		AlwaysOnTop:      true,
 		BackgroundColour: application.NewRGB(255, 255, 255),
 		URL:              "/",
+	})
+	mainWindow.OnWindowEvent(events.Windows.WindowClosing, func(_ *application.WindowEvent) {
+		app.Quit()
 	})
 
 	addWindowMenuItem(&addWindowMenuItemParams{
@@ -199,6 +197,7 @@ func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              params.URL,
 		Frameless:        true,
+		DisableResize:    true,
 		BackgroundType:   application.BackgroundTypeTransparent,
 		Windows: application.WindowsWindow{
 			DisableFramelessWindowDecorations: true,
