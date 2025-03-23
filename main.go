@@ -120,37 +120,37 @@ func main() {
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "danmu",
 		Name: "弹幕",
-		URL:  "/danmu",
+		URL:  "/#/danmu",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "enter-room",
 		Name: "进入直播间",
-		URL:  "/enter_room",
+		URL:  "/#/enter_room",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "gift",
 		Name: "礼物",
-		URL:  "/gift",
+		URL:  "/#/gift",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "interact-word",
 		Name: "关注直播间",
-		URL:  "/interact_word",
+		URL:  "/#/interact_word",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "llm",
 		Name: "大模型回复",
-		URL:  "/llm",
+		URL:  "/#/llm",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "membership",
 		Name: "大航海",
-		URL:  "/membership",
+		URL:  "/#/membership",
 	})
 	a.AddSubWindow(&AddSubWindowParams{
 		ID:   "superchat",
 		Name: "醒目留言",
-		URL:  "/superchat",
+		URL:  "/#/superchat",
 	})
 	systemTrayMenu.AddSeparator()
 	systemTrayMenu.Add("退出").OnClick(func(_ *application.Context) {

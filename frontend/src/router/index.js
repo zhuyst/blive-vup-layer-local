@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 import MainControlView from '@/view/MainControlView.vue'
 import DanmuView from '@/view/DanmuView.vue'
 import EnterRoomView from '@/view/EnterRoomView.vue'
@@ -9,7 +9,7 @@ import InteractWordView from '@/view/InteractWordView.vue'
 import LLMView from '@/view/LLMView.vue'
 
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/',
