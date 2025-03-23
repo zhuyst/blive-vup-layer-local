@@ -126,10 +126,15 @@ export default {
     top: rem(87);
     width: rem(920);
     height: rem(162);
+
     color: #fff;
+    text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
     font-family: 阿里妈妈方圆体, 'Microsoft YaHei', '微软雅黑', '黑体', '宋体', sans-serif;
     padding: rem(10) rem(55);
+    font-weight: 400;
     font-size: rem(32);
+    text-shadow: 0px rem(4) rem(4) rgba(0, 0, 0, 0.25);
+    
     display: flex;
     flex-direction: column;
     justify-content: center;

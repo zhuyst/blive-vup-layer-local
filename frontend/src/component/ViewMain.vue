@@ -57,7 +57,7 @@ export default {
 <template>
   <main
     :class="{
-      'is-show': state.is_dragging
+      'is-show': state.is_show
     }"
   >
     <header

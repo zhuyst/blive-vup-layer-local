@@ -22,11 +22,116 @@ export default {
 </script>
 <template>
   <ViewMain title="大模型回复" :list="llm_list" @test="sendLLM()">
-    <CardItem v-for="item in store.llm_list" :key="item.msg_id" uname="酱子辅助机">
-      <span>回复 {{ item.uname }} ：</span>
-      <span>{{ item.llm_result }}</span>
-    </CardItem>
+    <div class="llm-card" v-for="item in store.llm_list" :key="item.msg_id">
+      <img src="@/assets/robot.png" class="robot" />
+      <img src="@/assets/llm-card-topleft.svg" class="llm-card-topleft" />
+      <div class="llm-card-top"></div>
+      <div class="llm-card-content-container">
+        <div class="llm-card-content-background"></div>
+        <div class="llm-card-name">@{{ item.uname }}</div>
+        <div class="llm-card-content">{{ item.llm_result }}</div>
+      </div>
+    </div>
   </ViewMain>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss" scoped>
+.llm-card {
+  animation: fadeInFromLeft 0.5s;
+
+  position: relative;
+  width: rem(436);
+  height: rem(279);
+  margin-bottom: 25px;
+
+  .robot {
+    position: absolute;
+    left: rem(3);
+    width: rem(86);
+    height: rem(130);
+    aspect-ratio: 43/65;
+    z-index: 100;
+    transform: scaleX(-1);
+  }
+
+  .llm-card-topleft {
+    position: absolute;
+    top: rem(41);
+    z-index: 99;
+  }
+
+  .llm-card-top {
+    position: absolute;
+    top: rem(48);
+    left: rem(185);
+
+    width: rem(141);
+    height: rem(7);
+
+    border-radius: 2px;
+    background: linear-gradient(106deg, #ff85ce 12.81%, #0bf 90.39%);
+    z-index: 100;
+  }
+
+  .llm-card-content-container {
+    position: absolute;
+    top: rem(50);
+    left: rem(18);
+    width: rem(416);
+    height: rem(227);
+    background: linear-gradient(to right, rgba(255, 189, 229, 0.5), rgba(126, 214, 255, 0.5));
+    clip-path: polygon(12.22% 0%, 0% 19%, 0% 100%, 93.68% 100%, 100% 90.17%, 100% 0%);
+
+    .llm-card-content-background {
+      position: absolute;
+      z-index: 98;
+      width: rem(412);
+      height: rem(223);
+      margin: rem(2);
+
+      background-color: rgba(0, 0, 0, 0.8);
+      clip-path: polygon(12.22% 0%, 0% 19%, 0% 100%, 93.68% 100%, 100% 90.17%, 100% 0%);
+    }
+
+    .llm-card-name {
+      position: absolute;
+      left: rem(90);
+      top: rem(18);
+      z-index: 100;
+      width: rem(304);
+      height: rem(52);
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      text-align: center;
+      color: #fff;
+      text-shadow: 0px 0px 4px rgba(0, 0, 0, 0.5);
+      font-family: 锐字真言体, 'Microsoft YaHei', '微软雅黑', '黑体', '宋体', sans-serif;
+      font-size: rem(32);
+
+      border-radius: 50px;
+      background: linear-gradient(122deg, #ff92d4 0.22%, #2eabff 97.79%);
+    }
+
+    .llm-card-content {
+      position: absolute;
+      z-index: 100;
+      top: rem(90);
+      width: 100%;
+      height: rem(120);
+      padding: 0 rem(25);
+
+      display: flex;
+      align-items: center;
+
+      color: #fff;
+      font-weight: 400;
+      font-size: rem(24);
+      text-shadow: 0px rem(4) rem(4) rgba(0, 0, 0, 0.25);
+      font-family: 阿里妈妈方圆体, 'Microsoft YaHei', '微软雅黑', '黑体', '宋体', sans-serif;
+    }
+  }
+}
+</style>
