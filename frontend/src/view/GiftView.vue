@@ -28,10 +28,16 @@ export default {
       :uface="item.uface"
       :uname="item.uname"
     >
-      <span>CN¥{{ item.rmb }}</span>
+      <span><img :src="item.gift_icon" class="gift-icon" /> CN¥{{ item.rmb }}</span>
       <span>投喂 {{ item.gift_name }}x{{ item.gift_num }}</span>
     </CardItem>
   </ViewMain>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss">
+.gift-icon {
+  height: rem(60);
+  width: fit-content;
+  object-fit: contain;
+}
+</style>

@@ -13,6 +13,7 @@ import (
 	"github.com/vtb-link/bianka/basic"
 	"github.com/vtb-link/bianka/live"
 	"github.com/vtb-link/bianka/proto"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/exp/slog"
 	"io"
 	"math/rand"
@@ -61,7 +62,6 @@ type Service struct {
 
 	app        *App
 	appContext context.Context
-	appCancel  context.CancelFunc
 
 	livingCfg   LiveConfig
 	startResp   *live.AppStartResponse
@@ -80,9 +80,8 @@ type Service struct {
 	lastEnterUserTimer          *time.Timer
 }
 
-func (s *Service) startup(app *App) {
+func (s *Service) Init(app *App) {
 	s.app = app
-	s.appContext, s.appCancel = context.WithCancel(context.Background())
 
 	const (
 		ConfigProdFilePath = "./etc/config.toml"
@@ -118,6 +117,11 @@ func (s *Service) startup(app *App) {
 
 	s.liveClient = live.NewClient(live.NewConfig(s.cfg.BiliBili.AccessKey, s.cfg.BiliBili.SecretKey, s.cfg.BiliBili.AppId))
 	s.LLM = llm.NewLLM(s.cfg.QianFan)
+}
+
+func (s *Service) OnStartup(ctx context.Context, options application.ServiceOptions) error {
+	s.appContext = ctx
+	return nil
 }
 
 func NewService(logWriter io.Writer) *Service {
@@ -720,10 +724,12 @@ func (s *Service) startLlmReply(force bool) {
 	}(msgs)
 }
 
+func (s *Service) OnShutdown() error {
+	s.StopConn()
+	return nil
+}
+
 func (s *Service) StopConn() {
-	if s.appCancel != nil {
-		s.appCancel()
-	}
 	if s.startResp != nil {
 		s.liveClient.AppEnd(s.startResp.GameInfo.GameID)
 	}

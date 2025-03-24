@@ -60,9 +60,6 @@ func main() {
 		Windows: application.WindowsOptions{
 			WebviewUserDataPath: "./tmp/",
 		},
-		OnShutdown: func() {
-			service.StopConn()
-		},
 		SingleInstance: &application.SingleInstanceOptions{
 			UniqueID: "com.mikocat.blive-vup-layer",
 			OnSecondInstanceLaunch: func(_ application.SecondInstanceData) {
@@ -87,7 +84,7 @@ func main() {
 		SystemTrayMenu: systemTrayMenu,
 		WindowMap:      make(map[string]*SubWindow),
 	}
-	service.startup(a)
+	service.Init(a)
 
 	mainWindow = app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:            fmt.Sprintf("%s - 总控台", Name),

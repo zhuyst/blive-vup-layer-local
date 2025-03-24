@@ -39,4 +39,15 @@ export default {
   </ViewMain>
 </template>
 
-<style lang="scss"></style>
+<style lang="scss">
+.danmu-emoji {
+  height: rem(60);
+  width: fit-content;
+  object-fit: contain;
+}
+.danmu-normal-emoji {
+  object-fit: contain;
+  width: fit-content;
+  height: rem(20);
+}
+</style>

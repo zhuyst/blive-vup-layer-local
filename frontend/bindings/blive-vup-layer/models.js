@@ -6,6 +6,64 @@
 // @ts-ignore: Unused imports
 import {Create as $Create} from "@wailsio/runtime";
 
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
+import * as application$0 from "../github.com/wailsapp/wails/v3/pkg/application/models.js";
+
+export class App {
+    /**
+     * Creates a new App instance.
+     * @param {Partial<App>} [$$source = {}] - The source object to create the App.
+     */
+    constructor($$source = {}) {
+        if (!("App" in $$source)) {
+            /**
+             * @member
+             * @type {application$0.App | null}
+             */
+            this["App"] = null;
+        }
+        if (!("SystemTrayMenu" in $$source)) {
+            /**
+             * @member
+             * @type {application$0.Menu | null}
+             */
+            this["SystemTrayMenu"] = null;
+        }
+        if (!("WindowMap" in $$source)) {
+            /**
+             * @member
+             * @type {{ [_: string]: SubWindow | null }}
+             */
+            this["WindowMap"] = {};
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new App instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {App}
+     */
+    static createFrom($$source = {}) {
+        const $$createField0_0 = $$createType1;
+        const $$createField1_0 = $$createType3;
+        const $$createField2_0 = $$createType6;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("App" in $$parsedSource) {
+            $$parsedSource["App"] = $$createField0_0($$parsedSource["App"]);
+        }
+        if ("SystemTrayMenu" in $$parsedSource) {
+            $$parsedSource["SystemTrayMenu"] = $$createField1_0($$parsedSource["SystemTrayMenu"]);
+        }
+        if ("WindowMap" in $$parsedSource) {
+            $$parsedSource["WindowMap"] = $$createField2_0($$parsedSource["WindowMap"]);
+        }
+        return new App(/** @type {Partial<App>} */($$parsedSource));
+    }
+}
+
 export class InitRequestData {
     /**
      * Creates a new InitRequestData instance.
@@ -36,7 +94,7 @@ export class InitRequestData {
      * @returns {InitRequestData}
      */
     static createFrom($$source = {}) {
-        const $$createField1_0 = $$createType0;
+        const $$createField1_0 = $$createType7;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("config" in $$parsedSource) {
             $$parsedSource["config"] = $$createField1_0($$parsedSource["config"]);
@@ -129,5 +187,66 @@ export class Result {
     }
 }
 
+export class SubWindow {
+    /**
+     * Creates a new SubWindow instance.
+     * @param {Partial<SubWindow>} [$$source = {}] - The source object to create the SubWindow.
+     */
+    constructor($$source = {}) {
+        if (!("ID" in $$source)) {
+            /**
+             * @member
+             * @type {string}
+             */
+            this["ID"] = "";
+        }
+        if (!("Window" in $$source)) {
+            /**
+             * @member
+             * @type {application$0.WebviewWindow | null}
+             */
+            this["Window"] = null;
+        }
+        if (!("MenuItem" in $$source)) {
+            /**
+             * @member
+             * @type {application$0.MenuItem | null}
+             */
+            this["MenuItem"] = null;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new SubWindow instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {SubWindow}
+     */
+    static createFrom($$source = {}) {
+        const $$createField1_0 = $$createType9;
+        const $$createField2_0 = $$createType11;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("Window" in $$parsedSource) {
+            $$parsedSource["Window"] = $$createField1_0($$parsedSource["Window"]);
+        }
+        if ("MenuItem" in $$parsedSource) {
+            $$parsedSource["MenuItem"] = $$createField2_0($$parsedSource["MenuItem"]);
+        }
+        return new SubWindow(/** @type {Partial<SubWindow>} */($$parsedSource));
+    }
+}
+
 // Private type creation functions
-const $$createType0 = LiveConfig.createFrom;
+const $$createType0 = application$0.App.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = application$0.Menu.createFrom;
+const $$createType3 = $Create.Nullable($$createType2);
+const $$createType4 = SubWindow.createFrom;
+const $$createType5 = $Create.Nullable($$createType4);
+const $$createType6 = $Create.Map($Create.Any, $$createType5);
+const $$createType7 = LiveConfig.createFrom;
+const $$createType8 = application$0.WebviewWindow.createFrom;
+const $$createType9 = $Create.Nullable($$createType8);
+const $$createType10 = application$0.MenuItem.createFrom;
+const $$createType11 = $Create.Nullable($$createType10);

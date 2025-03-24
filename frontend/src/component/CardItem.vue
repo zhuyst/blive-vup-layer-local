@@ -102,11 +102,17 @@ export default {
     width: rem(550);
     height: rem(60.5);
     padding: 0 rem(55);
+
     display: flex;
     align-items: center;
+
     color: #fff;
     font-family: 锐字真言体, 'Microsoft YaHei', '微软雅黑', '黑体', '宋体', sans-serif;
     font-size: rem(38);
+
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .card-content-container {
@@ -128,17 +134,18 @@ export default {
     height: rem(162);
 
     color: #fff;
-    text-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25);
     font-family: 阿里妈妈方圆体, 'Microsoft YaHei', '微软雅黑', '黑体', '宋体', sans-serif;
-    padding: rem(10) rem(55);
+    padding: rem(8) rem(55);
     font-weight: 400;
-    font-size: rem(32);
-    text-shadow: 0px rem(4) rem(4) rgba(0, 0, 0, 0.25);
-    
+    font-size: rem(60);
+
     display: flex;
     flex-direction: column;
     justify-content: center;
     text-align: left;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 }
 </style>

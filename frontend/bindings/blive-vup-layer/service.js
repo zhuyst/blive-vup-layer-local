@@ -11,6 +11,15 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 import * as $models from "./models.js";
 
 /**
+ * @param {$models.App | null} app
+ * @returns {Promise<void> & { cancel(): void }}
+ */
+export function Init(app) {
+    let $resultPromise = /** @type {any} */($Call.ByID(1184374307, app));
+    return $resultPromise;
+}
+
+/**
  * @param {$models.InitRequestData | null} initData
  * @returns {Promise<$models.Result | null> & { cancel(): void }}
  */
