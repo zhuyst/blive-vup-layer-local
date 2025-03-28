@@ -31,7 +31,7 @@ export default {
       <img v-if="item.dm_type === 1" class="danmu-emoji" :src="item.emoji_img_url" />
       <template v-else>
         <template v-for="(t, j) in item.rich_text" :key="j">
-          <img v-if="t.type === 'image'" :src="t.img_url" class="danmu-normal-emoji" />
+          <img v-if="t.type === 'image'" :src="t.img_url" class="danmu-emoji" />
           <span v-else>{{ t.text }}</span>
         </template>
       </template>
@@ -44,10 +44,5 @@ export default {
   height: rem(60);
   width: fit-content;
   object-fit: contain;
-}
-.danmu-normal-emoji {
-  object-fit: contain;
-  width: fit-content;
-  height: rem(20);
 }
 </style>

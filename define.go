@@ -156,3 +156,10 @@ type LLMResult struct {
 	UserMessage string `json:"user_message"`
 	LLMResult   string `json:"llm_result"`
 }
+
+var RandomIdleReply = []string{
+	"现在是天气预报时间，直播间今天晴天，现在阴，21到26度，天气很好，这样天气最适合瘫成猫饼和你们一起睡觉！",
+	"检测到空气中有隐形猫毛漂浮，推荐发送rua弹幕捕获毛毛。",
+	"趁现在人少偷偷告诉你们，挂上主人粉丝牌的人会被我偷偷入侵，奖励一枚幸运猫爪印，喵喵",
+	"喵喵？我的弹幕仓库怎么空空的？电池要没了~快发送弹幕救救喵",
+}

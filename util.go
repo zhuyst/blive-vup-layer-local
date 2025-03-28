@@ -1,6 +1,9 @@
 package main
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"math/rand"
+)
 
 func MapToStruct(m map[string]interface{}, s interface{}) error {
 	j, err := json.Marshal(m)
@@ -23,4 +26,9 @@ func IsRepeatedChar(s string) bool {
 		}
 	}
 	return true
+}
+
+func GetRandomStr(randomArr []string) string {
+	i := rand.Intn(len(randomArr))
+	return randomArr[i]
 }

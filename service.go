@@ -31,10 +31,10 @@ const (
 	LlmReplyFansMedalLevel     = 10 // 可以触发大模型响应的最小粉丝牌等级
 	RoomEnterTTSFansMedalLevel = 15 // 可以触发进入直播间TTS提示的最小粉丝牌等级
 
-	MessageExpiration     = 15 * time.Minute // 历史消息过期时间
-	GiftComboDuration     = 4 * time.Second  // 礼物连击时间，连击结束后会合并播放TTS
-	LlmHistoryDuration    = 10 * time.Minute // 大模型使用历史弹幕去理解上下文的时间范围
-	LastEnterUserDuration = 10 * time.Minute // 最后一个进入直播间用户将会播放TTS的等待时间
+	MessageExpiration  = 15 * time.Minute // 历史消息过期时间
+	GiftComboDuration  = 4 * time.Second  // 礼物连击时间，连击结束后会合并播放TTS
+	LlmHistoryDuration = 10 * time.Minute // 大模型使用历史弹幕去理解上下文的时间范围
+	TimeIdleDuration   = 10 * time.Minute // 直播间进入空闲的时间
 
 	DisableLlmByUserCountDuration = 1 * time.Minute // 统计间隔时间内用户数量，用于触发暂停大模型
 	DisableLlmByUserCount         = 5               // 触发暂停大模型的用户数量
@@ -77,7 +77,7 @@ type Service struct {
 	isLiving                    bool
 	ttsQueue                    *tts.TTSQueue
 	lastEnterUser               *UserData
-	lastEnterUserTimer          *time.Timer
+	roomIdleTimer               *time.Timer
 }
 
 func (s *Service) Init(app *App) {
@@ -256,7 +256,7 @@ func (s *Service) init(code string) {
 	}
 
 	s.lastEnterUser = nil
-	s.lastEnterUserTimer = time.NewTimer(LastEnterUserDuration)
+	s.roomIdleTimer = time.NewTimer(TimeIdleDuration)
 
 	s.ttsQueue = tts.NewTTSQueue(s.TTS)
 	ttsCh := s.ttsQueue.ListenResult()
@@ -269,7 +269,7 @@ func (s *Service) init(code string) {
 			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
 				"audio_file_path": r.Fname,
 			})
-			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	}()
 	go func() {
@@ -281,7 +281,7 @@ func (s *Service) init(code string) {
 			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
 				"audio_file_path": r.Fname,
 			})
-			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	}()
 	pushTTS := func(params *tts.NewTaskParams, force bool) {
@@ -294,15 +294,14 @@ func (s *Service) init(code string) {
 	}
 
 	go func() {
-		for range s.lastEnterUserTimer.C {
+		for range s.roomIdleTimer.C {
 			if s.lastEnterUser == nil {
-				s.lastEnterUserTimer.Reset(LastEnterUserDuration)
+				s.roomIdleTimer.Reset(TimeIdleDuration)
 				continue
 			}
-			pushTTS(&tts.NewTaskParams{
-				Text: fmt.Sprintf("欢迎%s酱来到直播间", s.lastEnterUser.Uname),
-			}, false)
-			s.lastEnterUserTimer.Reset(LastEnterUserDuration)
+			text := GetRandomStr(RandomIdleReply)
+			pushTTS(&tts.NewTaskParams{Text: text}, false)
+			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	}()
 
@@ -748,9 +747,9 @@ func (s *Service) StopConn() {
 		s.tk = nil
 	}
 	s.lastEnterUser = nil
-	if s.lastEnterUserTimer != nil {
-		s.lastEnterUserTimer.Stop()
-		s.lastEnterUserTimer = nil
+	if s.roomIdleTimer != nil {
+		s.roomIdleTimer.Stop()
+		s.roomIdleTimer = nil
 	}
 	if s.ttsQueue != nil {
 		s.ttsQueue.Close()

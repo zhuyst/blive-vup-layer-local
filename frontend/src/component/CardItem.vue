@@ -24,8 +24,9 @@ export default {
     <img src="@/assets/card-face-background.svg" class="card-face-background" />
     <div class="card-face" :style="{ backgroundImage: `url(${uface ? uface : NoFaceGif})` }"></div>
     <div class="card-face-bottomright"></div>
-    <img src="@/assets/card-name-container.svg" class="card-name-container" />
-    <div class="card-name">{{ uname ? uname : '未知' }}</div>
+    <div class="card-name-container">
+      <div class="card-name">{{ uname ? uname : '未知' }}</div>
+    </div>
     <img src="@/assets/card-content-container.svg" class="card-content-container" />
     <div class="card-content">
       <slot></slot>
@@ -91,17 +92,25 @@ export default {
 
   .card-name-container {
     position: absolute;
-    left: rem(147);
-    width: rem(625);
+    left: rem(240);
     height: rem(61);
   }
 
-  .card-name {
+  .card-name-container:before {
+    content: '';
     position: absolute;
-    left: rem(160);
-    width: rem(550);
+    top: 0;
+    left: rem(-61);
+    right: rem(-61);
+    bottom: 0;
+    background: linear-gradient(147deg, #ff73f3 0%, #00d9ff 100%);
+    transform: skewX(45deg);
+  }
+
+  .card-name {
+    position: relative;
+
     height: rem(60.5);
-    padding: 0 rem(55);
 
     display: flex;
     align-items: center;
@@ -146,6 +155,10 @@ export default {
 
     overflow: hidden;
     text-overflow: ellipsis;
+
+    span {
+      overflow: hidden;
+    }
   }
 }
 </style>
