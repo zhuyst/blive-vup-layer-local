@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "extendable-media-recorder": "^9.2.23",
+    "extendable-media-recorder-wav-encoder": "^7.0.127",
     "pinia": "^2.1.7",
     "sass": "^1.86.0",
     "vue": "^3.4.21",
@@ -19,11 +21,11 @@
     "@rushstack/eslint-patch": "^1.8.0",
     "@vitejs/plugin-vue": "^5.0.4",
     "@vue/eslint-config-prettier": "^9.0.0",
+    "@wailsio/runtime": "latest",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.23.0",
     "prettier": "^3.2.5",
     "vite": "^5.2.8",
-    "vite-plugin-vue-devtools": "^7.0.25",
-    "@wailsio/runtime": "latest"
+    "vite-plugin-vue-devtools": "^7.0.25"
   }
 }

@@ -3,6 +3,8 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import '@/assets/main.scss'
 import router from './router'
+import { register } from 'extendable-media-recorder'
+import { connect } from 'extendable-media-recorder-wav-encoder'
 
 const app = createApp(App)
 app.use(router)
@@ -24,3 +26,8 @@ setRootFontSize()
 
 // 监听窗口大小变化
 window.addEventListener('resize', setRootFontSize)
+
+async function init() {
+  await register(await connect())
+}
+init()

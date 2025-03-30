@@ -6,24 +6,27 @@ import (
 	"errors"
 	"fmt"
 	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
+	"github.com/openai/openai-go"
+	"github.com/openai/openai-go/option"
 	log "github.com/sirupsen/logrus"
 	"strings"
 )
 
 type LLM struct {
-	cfg            *config.QianFanConfig
-	chatCompletion *qianfan.ChatCompletion
+	cfg            *config.LLMConfig
+	chatCompletion *qianfan.ChatCompletionV2
+	client         *openai.Client
 }
 
-func NewLLM(config *config.QianFanConfig) *LLM {
-	cfg := qianfan.GetConfig()
-	cfg.AK = config.AccessKey
-	cfg.SK = config.SecretKey
+func NewLLM(config *config.LLMConfig) *LLM {
+	client := openai.NewClient(
+		// 替换下列示例中参数，将your_APIKey替换为真实值，如何获取API Key请查看https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Um2wxbaps#步骤二-获取api-key
+		option.WithAPIKey(config.APIKey),
+		option.WithBaseURL("https://qianfan.baidubce.com/v2/"), // 千帆ModelBuilder平台地址
+	)
 	return &LLM{
-		cfg: config,
-		chatCompletion: qianfan.NewChatCompletion(
-			qianfan.WithModel("ERNIE-4.0-Turbo-8K"),
-		),
+		cfg:    config,
+		client: client,
 	}
 }
 
@@ -54,23 +57,21 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (strin
 	content := contentSb.String()
 	log.Infof("LLM content: %s", content)
 
-	resp, err := llm.chatCompletion.Do(
-		ctx,
-		&qianfan.ChatCompletionRequest{
-			System:      llm.cfg.Prompt,
-			Temperature: 0.5,
-			TopP:        0.5,
-			Messages: []qianfan.ChatCompletionMessage{
-				qianfan.ChatCompletionUserMessage(content),
-			},
-		},
-	)
+	chatCompletion, err := llm.client.Chat.Completions.New(ctx, openai.ChatCompletionNewParams{
+		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
+			openai.ChatCompletionMessage{Role: "system", Content: llm.cfg.Prompt},
+			openai.ChatCompletionMessage{Role: "user", Content: content},
+		}),
+		Temperature: openai.Float(0.5),
+		TopP:        openai.Float(0.5),
+		Model:       openai.F(llm.cfg.Model), //模型对应的model值，请查看支持的模型列表：https://cloud.baidu.com/doc/WENXINWORKSHOP/s/wm7ltcvgc
+	})
 	if err != nil {
 		log.Errorf("LLM err: %v", err)
 		return "", err
 	}
 
-	result := resp.Result
+	result := chatCompletion.Choices[0].Message.Content
 	result = strings.ReplaceAll(result, "喔~", "喵 ")
 	result = strings.ReplaceAll(result, "~", " ")
 	result = strings.TrimSpace(result)

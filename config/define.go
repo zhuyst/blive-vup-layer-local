@@ -6,15 +6,15 @@ const (
 
 type Config struct {
 	DbPath    string           `toml:"db_path"`
-	QianFan   *QianFanConfig   `toml:"qianfan"`
+	LLM       *LLMConfig       `toml:"llm"`
 	AliyunTTS *AliyunTTSConfig `toml:"aliyun_tts"`
 	BiliBili  *BiliBiliConfig  `toml:"biliBili"`
 }
 
-type QianFanConfig struct {
-	AccessKey string `toml:"access_key"`
-	SecretKey string `toml:"secret_key"`
-	Prompt    string `toml:"prompt"`
+type LLMConfig struct {
+	APIKey string `toml:"api_key"`
+	Model  string `json:"model"`
+	Prompt string `toml:"prompt"`
 }
 
 type AliyunTTSConfig struct {

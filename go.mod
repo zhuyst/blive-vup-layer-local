@@ -9,6 +9,7 @@ require (
 	github.com/glebarez/sqlite v1.11.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/golang-lru/v2 v2.0.7
+	github.com/openai/openai-go v0.1.0-alpha.61
 	github.com/pelletier/go-toml/v2 v2.2.3
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.9.3
@@ -78,6 +79,10 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.18.2 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/wailsapp/go-webview2 v1.0.19 // indirect
 	github.com/wailsapp/mimetype v1.4.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

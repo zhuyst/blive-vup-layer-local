@@ -11,6 +11,7 @@ import GiftList from '@/component/GiftList.vue'
 import EnterRoomList from '@/component/EnterRoomList.vue'
 import TTSAudio from '@/component/TTSAudio.vue'
 import Popup from '@/component/Popup.vue'
+import RecordAudio from '@/component/RecordAudio.vue'
 import noFaceSrc from '@/assets/noface.gif'
 import testWavSrc from '@/assets/test.wav'
 
@@ -274,6 +275,7 @@ onMounted(() => {
             <button @click="ShowWindow('llm')">大模型回复</button>
             <button @click="ShowWindow('interact-word')">关注直播间</button>
           </div>
+          <RecordAudio />
         </div>
         <DanmuList />
       </div>

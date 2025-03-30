@@ -115,7 +115,7 @@ func (tts *TTS) NewTask(params *NewTaskParams) (*Task, error) {
 		tts.cfg.AppKey, tts.cfg.AccessKey, tts.cfg.SecretKey,
 	)
 	if err != nil {
-		log.Errorf("NewConnectionConfigWithAKInfoDefault err: %v", err)
+		l.Errorf("NewConnectionConfigWithAKInfoDefault err: %v", err)
 		return nil, err
 	}
 
@@ -123,7 +123,7 @@ func (tts *TTS) NewTask(params *NewTaskParams) (*Task, error) {
 		t.onTaskFailed, t.onSynthesisResult, nil,
 		t.onCompleted, t.onClose, param)
 	if err != nil {
-		log.Errorf("NewTask err: %v", err)
+		l.Errorf("NewTask err: %v", err)
 		return nil, err
 	}
 
@@ -148,6 +148,8 @@ func (task *Task) Run() (string, error) {
 
 	err = task.waitReady(ch)
 	if err != nil {
+		task.Logger.Errorf("waitReady err: %v", err)
+		task.speechSynthesis.Shutdown()
 		task.Err = err
 		return "", err
 	}

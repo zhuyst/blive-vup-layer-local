@@ -116,7 +116,7 @@ func (s *Service) Init(app *App) {
 	}
 
 	s.liveClient = live.NewClient(live.NewConfig(s.cfg.BiliBili.AccessKey, s.cfg.BiliBili.SecretKey, s.cfg.BiliBili.AppId))
-	s.LLM = llm.NewLLM(s.cfg.QianFan)
+	s.LLM = llm.NewLLM(s.cfg.LLM)
 }
 
 func (s *Service) OnStartup(ctx context.Context, options application.ServiceOptions) error {
