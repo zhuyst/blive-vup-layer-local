@@ -14,6 +14,11 @@ const (
 	ResultTypeTTS = "tts"
 	ResultTypeLLM = "llm"
 
+	ResultTypeRecordStateChange = "record_state_change"
+	ResultTypeRecordStart       = "record_start"
+	ResultTypeRecordStop        = "record_stop"
+	ResultTypeRecordResult      = "record_result"
+
 	ResultTypeWindow = "window"
 )
 

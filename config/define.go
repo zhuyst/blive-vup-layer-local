@@ -5,10 +5,11 @@ const (
 )
 
 type Config struct {
-	DbPath    string           `toml:"db_path"`
-	LLM       *LLMConfig       `toml:"llm"`
-	AliyunTTS *AliyunTTSConfig `toml:"aliyun_tts"`
-	BiliBili  *BiliBiliConfig  `toml:"biliBili"`
+	DbPath            string          `toml:"db_path"`
+	LLM               *LLMConfig      `toml:"llm"`
+	AliyunTTS         *AliyunConfig   `toml:"aliyun_tts"`
+	SpeechRecognition *AliyunConfig   `toml:"speech_recognition"`
+	BiliBili          *BiliBiliConfig `toml:"biliBili"`
 }
 
 type LLMConfig struct {
@@ -17,7 +18,7 @@ type LLMConfig struct {
 	Prompt string `toml:"prompt"`
 }
 
-type AliyunTTSConfig struct {
+type AliyunConfig struct {
 	AccessKey string `toml:"access_key"`
 	SecretKey string `toml:"secret_key"`
 	AppKey    string `toml:"app_key"`

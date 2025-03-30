@@ -11,6 +11,15 @@ import {Call as $Call, Create as $Create} from "@wailsio/runtime";
 import * as $models from "./models.js";
 
 /**
+ * @param {string} base64Str
+ * @returns {Promise<void> & { cancel(): void }}
+ */
+export function CommitRecord(base64Str) {
+    let $resultPromise = /** @type {any} */($Call.ByID(1889488809, base64Str));
+    return $resultPromise;
+}
+
+/**
  * @param {$models.App | null} app
  * @returns {Promise<void> & { cancel(): void }}
  */

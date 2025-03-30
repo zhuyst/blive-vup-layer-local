@@ -3,166 +3,131 @@ package speechrecognition
 import (
 	"blive-vup-layer/config"
 	"bytes"
-	"errors"
-	"github.com/aliyun/alibabacloud-nls-go-sdk"
-	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
-	"io"
-	syslog "log"
-	"time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/auth/credentials"
+	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"strings"
 )
 
-type Task struct {
-	TaskId string
-	Logger *log.Entry
-	Result string
-	Err    error
-
-	sr       *nls.SpeechRecognition
-	param    nls.SpeechRecognitionStartParam
-	pcmAudio []byte
-}
-
-func (task *Task) onTaskFailed(text string, param interface{}) {
-	task.Logger.Println("TaskFailed:", text)
-	task.Result = text
-}
-
-func (task *Task) onStarted(text string, param interface{}) {
-	task.Logger.Println("onStarted:", text)
-	task.Result = text
-}
-
-func (task *Task) onResultChanged(text string, param interface{}) {
-	task.Logger.Println("onResultChanged:", text)
-	task.Result = text
-}
-
-func (task *Task) onCompleted(text string, param interface{}) {
-	task.Logger.Println("onCompleted:", text)
-	task.Result = text
-}
-
-func (task *Task) onClose(param interface{}) {
-	task.Logger.Println("onClosed:")
-}
-
-func (task *Task) waitReady(ch chan bool) error {
-	select {
-	case done := <-ch:
-		{
-			if !done {
-				task.Logger.Println("Wait failed")
-				return errors.New("wait failed")
-			}
-			task.Logger.Println("Wait done")
-		}
-	case <-time.After(20 * time.Second):
-		{
-			task.Logger.Println("Wait timeout")
-			return errors.New("wait timeout")
-		}
-	}
-	return nil
-}
-
 type SpeechRecognition struct {
-	cfg *config.AliyunTTSConfig
+	cfg    *config.AliyunConfig
+	client *sdk.Client
 }
 
-func NewSpeechRecognition(cfg *config.AliyunTTSConfig) *SpeechRecognition {
+func NewSpeechRecognition(cfg *config.AliyunConfig) (*SpeechRecognition, error) {
+	aliyunConfig := sdk.NewConfig()
+	credential := &credentials.AccessKeyCredential{
+		AccessKeyId:     cfg.AccessKey,
+		AccessKeySecret: cfg.SecretKey,
+	}
+	client, err := sdk.NewClientWithOptions("cn-beijing", aliyunConfig, credential)
+	if err != nil {
+		return nil, err
+	}
 	return &SpeechRecognition{
-		cfg: cfg,
-	}
+		cfg:    cfg,
+		client: client,
+	}, nil
 }
 
-type NewTaskParams struct {
-	PcmAudio []byte
+type TokenResult struct {
+	ErrMsg string `json:"ErrMsg"`
+	Token  *Token `json:"Token"`
 }
 
-func (sr *SpeechRecognition) NewTask(params *NewTaskParams) (*Task, error) {
-	nlsCfg, err := nls.NewConnectionConfigWithAKInfoDefault(
-		nls.DEFAULT_URL,
-		sr.cfg.AppKey, sr.cfg.AccessKey, sr.cfg.SecretKey,
-	)
+type Token struct {
+	UserId     string `json:"UserId"`
+	Id         string `json:"Id"`
+	ExpireTime int64  `json:"ExpireTime"`
+}
+
+func (sr *SpeechRecognition) getToken() (*Token, error) {
+	request := requests.NewCommonRequest()
+	request.Method = "POST"
+	request.Domain = "nls-meta.cn-shanghai.aliyuncs.com"
+	request.ApiName = "CreateToken"
+	request.Version = "2019-02-28"
+	response, err := sr.client.ProcessCommonRequest(request)
 	if err != nil {
-		log.Errorf("NewConnectionConfigWithAKInfoDefault err: %v", err)
 		return nil, err
 	}
-
-	taskId := uuid.NewV4().String()
-	l := log.WithField("task_id", taskId)
-	param := nls.SpeechRecognitionStartParam{
-		Format:     "wav",
-		SampleRate: 16000,
-		//EnableIntermediateResult:       true,
-		EnablePunctuationPrediction:    true,
-		EnableInverseTextNormalization: true,
+	httpStatus := response.GetHttpStatus()
+	if httpStatus != http.StatusOK {
+		return nil, fmt.Errorf("get token failed: status_code: %d, content: %s", httpStatus, response.GetHttpContentString())
 	}
 
-	t := &Task{
-		TaskId:   taskId,
-		Logger:   l,
-		param:    param,
-		pcmAudio: params.PcmAudio,
-	}
-
-	nlsLog := nls.NewNlsLogger(io.Discard, "NLS", syslog.LstdFlags|syslog.Lmicroseconds)
-	nlsSr, err := nls.NewSpeechRecognition(nlsCfg, nlsLog,
-		t.onTaskFailed, t.onStarted, t.onResultChanged,
-		t.onCompleted, t.onClose, nil)
-	if err != nil {
-		l.Errorf("NewSpeechRecognition err: %v", err)
+	var tr TokenResult
+	if err := json.Unmarshal([]byte(response.GetHttpContentString()), &tr); err != nil {
 		return nil, err
 	}
-	t.sr = nlsSr
-
-	return t, nil
+	return tr.Token, nil
 }
 
-func (task *Task) Run() (string, error) {
-	task.Logger.Println("Sr start")
-	ready, err := task.sr.Start(task.param, nil)
+type FlashRecognizerResult struct {
+	TaskId      string       `json:"task_id"`
+	Result      string       `json:"result"`
+	Status      int          `json:"status"`
+	Message     string       `json:"message"`
+	FlashResult *FlashResult `json:"flash_result"`
+}
+
+type FlashResult struct {
+	Duration  int64       `json:"duration"`
+	Completed bool        `json:"completed"`
+	Latency   int64       `json:"latency"`
+	Sentences []*Sentence `json:"sentences"`
+}
+
+type Sentence struct {
+	Text      string `json:"text"`
+	BeginTime int64  `json:"begin_time"`
+	EndTime   int64  `json:"end_time"`
+	ChannelId int64  `json:"channel_id"`
+}
+
+func (sr *SpeechRecognition) RecognitionWav(ctx context.Context, wavFileBytes []byte) (string, error) {
+	u := "https://nls-gateway-cn-beijing.aliyuncs.com/stream/v1/FlashRecognizer"
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u, bytes.NewBuffer(wavFileBytes))
 	if err != nil {
-		task.Logger.Errorf("Start err: %v", err)
-		task.sr.Shutdown()
-		task.Err = err
 		return "", err
 	}
-	if err = task.waitReady(ready); err != nil {
-		task.Logger.Errorf("waitReady err: %v", err)
-		task.sr.Shutdown()
-		task.Err = err
-		return "", err
-	}
-	buffers := nls.LoadPcmInChunk(bytes.NewBuffer(task.pcmAudio), 320)
-	for _, data := range buffers.Data {
-		if data == nil {
-			continue
-		}
-		if err := task.sr.SendAudioData(data.Data); err != nil {
-			task.Logger.Errorf("SendAudioData err: %v", err)
-			return "", err
-		}
-		time.Sleep(10 * time.Millisecond)
-	}
-	ready, err = task.sr.Stop()
+	token, err := sr.getToken()
 	if err != nil {
-		task.Logger.Errorf("Stop err: %v", err)
-		task.sr.Shutdown()
-		task.Err = err
 		return "", err
 	}
-
-	if err = task.waitReady(ready); err != nil {
-		task.Logger.Errorf("waitReady err: %v", err)
-		task.sr.Shutdown()
-		task.Err = err
+	query := url.Values{}
+	query.Set("appkey", sr.cfg.AppKey)
+	query.Set("token", token.Id)
+	query.Set("format", "wav")
+	query.Set("sample_rate", "16000")
+	query.Set("enable_inverse_text_normalization", "true")
+	query.Set("enable_timestamp_alignment", "true")
+	req.URL.RawQuery = query.Encode()
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
 		return "", err
 	}
-
-	task.Logger.Infof("Sr done")
-	task.sr.Shutdown()
-
-	return task.Result, nil
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("recognition failed: status_code: %d", resp.StatusCode)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	var res FlashRecognizerResult
+	if err := json.Unmarshal(body, &res); err != nil {
+		return "", err
+	}
+	textSb := strings.Builder{}
+	for _, s := range res.FlashResult.Sentences {
+		textSb.WriteString(s.Text)
+	}
+	return textSb.String(), nil
 }

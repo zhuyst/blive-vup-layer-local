@@ -4,6 +4,7 @@ import (
 	"blive-vup-layer/config"
 	"blive-vup-layer/dao"
 	"blive-vup-layer/llm"
+	"blive-vup-layer/speechrecognition"
 	"blive-vup-layer/tts"
 	"context"
 	"fmt"
@@ -56,6 +57,7 @@ type Service struct {
 
 	LLM *llm.LLM
 	TTS *tts.TTS
+	Sr  *speechrecognition.SpeechRecognition
 	Dao *dao.Dao
 
 	slog *slog.Logger
@@ -106,6 +108,12 @@ func (s *Service) Init(app *App) {
 	s.TTS, err = tts.NewTTS(s.cfg.AliyunTTS)
 	if err != nil {
 		log.Fatalf("tts.NewTTS err: %v", err)
+		return
+	}
+
+	s.Sr, err = speechrecognition.NewSpeechRecognition(s.cfg.SpeechRecognition)
+	if err != nil {
+		log.Fatalf("speechrecognition.NewSpeechRecognition err: %v", err)
 		return
 	}
 
@@ -654,6 +662,10 @@ func (s *Service) startLlmReply(force bool) {
 		}
 	}
 
+	if len(msgs) == 0 {
+		return
+	}
+
 	if !force {
 		llmReplyLruLen := s.llmReplyLru.Len()
 		if llmReplyLruLen >= LlmReplyLimitCount {
@@ -710,13 +722,21 @@ func (s *Service) startLlmReply(force bool) {
 			log.Errorf("ChatWithLLM err: %v", err)
 			return
 		}
+		msgId := uuid.NewV4().String()
 		s.writeResultOK(ResultTypeLLM, LLMResult{
 			UserData:    *lastMsg.User,
-			MsgID:       uuid.NewV4().String(),
+			MsgID:       msgId,
 			UserMessage: lastMsg.Message,
 			LLMResult:   llmRes,
 		})
-		s.llmReplyLru.Add(uuid.NewV4().String(), struct{}{})
+		s.historyMsgLru.Add(msgId, &ChatMessage{
+			User: &UserData{
+				Uname: "巫女酱子的辅助机器人",
+			},
+			Message:   llmRes,
+			Timestamp: time.Now(),
+		})
+		s.llmReplyLru.Add(msgId, struct{}{})
 		s.pushTTS(&tts.NewTaskParams{
 			Text: llmRes,
 		}, false)

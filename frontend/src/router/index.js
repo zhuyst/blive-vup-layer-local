@@ -1,12 +1,4 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
-import MainControlView from '@/view/MainControlView.vue'
-import DanmuView from '@/view/DanmuView.vue'
-import EnterRoomView from '@/view/EnterRoomView.vue'
-import GiftView from '@/view/GiftView.vue'
-import MembershipView from '@/view/MembershipView.vue'
-import SuperchatView from '@/view/SuperchatView.vue'
-import InteractWordView from '@/view/InteractWordView.vue'
-import LLMView from '@/view/LLMView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
@@ -14,42 +6,42 @@ const router = createRouter({
     {
       path: '/',
       name: 'main-control',
-      component: MainControlView
+      component: () => import('@/view/MainControlView.vue')
     },
     {
       path: '/danmu',
       name: 'danmu',
-      component: DanmuView
+      component: () => import('@/view/DanmuView.vue')
     },
     {
       path: '/enter_room',
       name: 'enter-room',
-      component: EnterRoomView
+      component: () => import('@/view/EnterRoomView.vue')
     },
     {
       path: '/gift',
       name: 'gift',
-      component: GiftView
+      component: () => import('@/view/GiftView.vue')
     },
     {
       path: '/membership',
       name: 'membership',
-      component: MembershipView
+      component: () => import('@/view/MembershipView.vue')
     },
     {
       path: '/superchat',
       name: 'superchat',
-      component: SuperchatView
+      component: () => import('@/view/SuperchatView.vue')
     },
     {
       path: '/interact_word',
       name: 'interact-word',
-      component: InteractWordView
+      component: () => import('@/view/InteractWordView.vue')
     },
     {
       path: '/llm',
       name: 'llm',
-      component: LLMView
+      component: () => import('@/view/LLMView.vue')
     }
   ]
 })

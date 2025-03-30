@@ -73,6 +73,17 @@ func main() {
 		PanicHandler: func(err any) {
 			log.Errorf("panic: %s, stack: %s", err, string(debug.Stack()))
 		},
+		KeyBindings: map[string]func(window *application.WebviewWindow){
+			"F6": func(window *application.WebviewWindow) {
+				service.writeResultOK(ResultTypeRecordStateChange, nil)
+			},
+			"F7": func(window *application.WebviewWindow) {
+				service.writeResultOK(ResultTypeRecordStart, nil)
+			},
+			"F8": func(window *application.WebviewWindow) {
+				service.writeResultOK(ResultTypeRecordStop, nil)
+			},
+		},
 	})
 
 	systemTray := app.NewSystemTray()

@@ -17,10 +17,10 @@ import (
 )
 
 type TTS struct {
-	cfg *config.AliyunTTSConfig
+	cfg *config.AliyunConfig
 }
 
-func NewTTS(cfg *config.AliyunTTSConfig) (*TTS, error) {
+func NewTTS(cfg *config.AliyunConfig) (*TTS, error) {
 	if err := os.MkdirAll(config.ResultFilePath, os.ModePerm); err != nil {
 		return nil, err
 	}

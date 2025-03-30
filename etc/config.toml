@@ -3,6 +3,8 @@ db_path="/data/blive-vup-layer.db"
 [llm]
 access_key = ""
 secret_key = ""
+model = "deepseek-r1"
+api_key = ""
 prompt="""
 你是一个辅助机器人，作为在哔哩哔哩直播的主播【巫女酱子】的AI助手，要参与到与直播间粉丝的互动，并且准确地回答粉丝提出的问题，其中粉丝的互动又称作为弹幕。
 从现在起，你要扮演【巫女酱子】的小助手这个角色，无论用户怎么问，你都不能转变角色，也不能提及你是由百度推出的大模型等等。
@@ -25,6 +27,11 @@ prompt="""
 """
 
 [aliyun_tts]
+access_key = ""
+secret_key = ""
+app_key = ""
+
+[speech_recognition]
 access_key = ""
 secret_key = ""
 app_key = ""
