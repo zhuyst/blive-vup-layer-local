@@ -1,6 +1,7 @@
 package tts
 
 import (
+	"blive-vup-layer/util"
 	"context"
 	"fmt"
 )
@@ -40,10 +41,10 @@ func (q *TTSQueue) Push(params *NewTaskParams) error {
 		Task: task,
 		Done: doneCh,
 	}
-	go func() {
+	util.RunGr(func() {
 		task.Run()
 		doneCh <- struct{}{}
-	}()
+	})
 	return nil
 }
 
@@ -55,7 +56,7 @@ type TaskResult struct {
 
 func (q *TTSQueue) ListenResult() <-chan *TaskResult {
 	ch := make(chan *TaskResult, 64)
-	go func() {
+	util.RunGr(func() {
 		for {
 			select {
 			case <-q.ctx.Done():
@@ -74,7 +75,7 @@ func (q *TTSQueue) ListenResult() <-chan *TaskResult {
 				}
 			}
 		}
-	}()
+	})
 	return ch
 }
 

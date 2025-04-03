@@ -2,6 +2,7 @@ package main
 
 import (
 	"blive-vup-layer/config"
+	"blive-vup-layer/util"
 	"embed"
 	_ "embed"
 	"fmt"
@@ -23,6 +24,8 @@ var iconFS embed.FS
 const Name = "巫女酱子弹幕姬"
 
 func main() {
+	defer util.Recover()
+
 	log.SetFormatter(&log.JSONFormatter{})
 
 	if err := os.MkdirAll("logs", os.ModePerm); err != nil {

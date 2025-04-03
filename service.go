@@ -6,6 +6,7 @@ import (
 	"blive-vup-layer/llm"
 	"blive-vup-layer/speechrecognition"
 	"blive-vup-layer/tts"
+	"blive-vup-layer/util"
 	"context"
 	"fmt"
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -145,6 +146,8 @@ func NewService(logWriter io.Writer) *Service {
 }
 
 func (s *Service) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	defer util.Recover()
+
 	fileName := r.URL.Path
 	filePath := path.Join(config.ResultFilePath, fileName)
 	f, err := os.ReadFile(filePath)
@@ -177,6 +180,8 @@ type ChatMessage struct {
 }
 
 func (s *Service) InitConn(initData *InitRequestData) *Result {
+	defer util.Recover()
+
 	s.livingCfg = initData.Config
 	s.writeResultOK(ResultTypeConfig, s.livingCfg)
 
@@ -186,6 +191,8 @@ func (s *Service) InitConn(initData *InitRequestData) *Result {
 }
 
 func (s *Service) SetConfig(configData LiveConfig) *Result {
+	defer util.Recover()
+
 	s.livingCfg = configData
 	return BuildResultOk(s.livingCfg)
 }
@@ -220,7 +227,7 @@ func (s *Service) init(code string) {
 	s.connContext, s.connCancel = context.WithCancel(s.appContext)
 
 	s.tk = time.NewTicker(time.Second * 20)
-	go func() {
+	util.RunGr(func() {
 		for {
 			select {
 			case <-s.appContext.Done():
@@ -231,15 +238,19 @@ func (s *Service) init(code string) {
 					log.Errorf("Heartbeat fail, err: %v", err)
 					s.connCancel()
 					s.StopConn()
-					go s.init(code)
+					util.RunGr(func() {
+						s.init(code)
+					})
 					return
 				}
 			}
 		}
-	}()
+	})
 
 	// close 事件处理
 	onCloseHandle := func(wcs *basic.WsClient, startResp basic.StartResp, closeType int) {
+		defer util.Recover()
+
 		// 注册关闭回调
 		log.Infof("WebsocketClient onClose, startResp: %v", startResp)
 
@@ -258,7 +269,9 @@ func (s *Service) init(code string) {
 			s.writeResultError(ResultTypeRoom, CodeInternalError, err.Error())
 			s.connCancel()
 			s.StopConn()
-			go s.init(code)
+			util.RunGr(func() {
+				s.init(code)
+			})
 			return
 		}
 	}
@@ -268,7 +281,7 @@ func (s *Service) init(code string) {
 
 	s.ttsQueue = tts.NewTTSQueue(s.TTS)
 	ttsCh := s.ttsQueue.ListenResult()
-	go func() {
+	util.RunGr(func() {
 		for r := range ttsCh {
 			if err := r.Err; err != nil {
 				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
@@ -279,8 +292,8 @@ func (s *Service) init(code string) {
 			})
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
-	}()
-	go func() {
+	})
+	util.RunGr(func() {
 		for r := range ttsCh {
 			if err := r.Err; err != nil {
 				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
@@ -291,7 +304,7 @@ func (s *Service) init(code string) {
 			})
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
-	}()
+	})
 	pushTTS := func(params *tts.NewTaskParams, force bool) {
 		if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
 			return
@@ -301,17 +314,17 @@ func (s *Service) init(code string) {
 		}
 	}
 
-	go func() {
+	util.RunGr(func() {
 		for range s.roomIdleTimer.C {
 			if s.lastEnterUser == nil {
 				s.roomIdleTimer.Reset(TimeIdleDuration)
 				continue
 			}
-			text := GetRandomStr(RandomIdleReply)
+			text := util.GetRandomStr(RandomIdleReply)
 			pushTTS(&tts.NewTaskParams{Text: text}, false)
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
-	}()
+	})
 
 	s.historyMsgLru = expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration)
 	s.llmReplyLru = expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration)
@@ -326,6 +339,8 @@ func (s *Service) init(code string) {
 	// 消息处理 Handle
 	dispatcherHandleMap := basic.DispatcherHandleMap{
 		proto.OperationMessage: func(_ *basic.WsClient, msg *proto.Message) error {
+			defer util.Recover()
+
 			// 单条消息raw
 			log.Infof(string(msg.Payload()))
 
@@ -362,7 +377,9 @@ func (s *Service) init(code string) {
 					}
 					s.writeResultOK(ResultTypeDanmu, danmuData)
 
-					go s.setUser(u)
+					util.RunGr(func() {
+						s.setUser(u)
+					})
 
 					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
 						User:      &u,
@@ -416,7 +433,9 @@ func (s *Service) init(code string) {
 					}
 					s.writeResultOK(ResultTypeSuperChat, scData)
 
-					go s.setUser(u)
+					util.RunGr(func() {
+						s.setUser(u)
+					})
 
 					s.historyMsgLru.Add(d.MsgID, &ChatMessage{
 						User:      &u,
@@ -459,7 +478,9 @@ func (s *Service) init(code string) {
 						},
 					})
 
-					go s.setUser(u)
+					util.RunGr(func() {
+						s.setUser(u)
+					})
 
 					key := fmt.Sprintf("%s-%d", d.OpenID, d.GiftID)
 
@@ -482,7 +503,7 @@ func (s *Service) init(code string) {
 					giftTimerMapMutex.Lock()
 					giftTimerMap[key] = gt
 					giftTimerMapMutex.Unlock()
-					go func(gt *GiftWithTimer) {
+					util.RunGr(func() {
 						defer gt.Timer.Stop()
 						<-gt.Timer.C
 
@@ -494,7 +515,7 @@ func (s *Service) init(code string) {
 						s.pushTTS(&tts.NewTaskParams{
 							Text: fmt.Sprintf("谢谢%s酱赠送的%d个%s 么么哒", gt.Uname, giftNum, gt.GiftName),
 						}, false)
-					}(gt)
+					})
 					break
 				}
 			case *proto.CmdGuardData:
@@ -519,7 +540,9 @@ func (s *Service) init(code string) {
 						Timestamp:  d.Timestamp,
 						MsgID:      d.MsgID,
 					})
-					go s.setUser(u)
+					util.RunGr(func() {
+						s.setUser(u)
+					})
 					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("谢谢%s酱赠送的%d个%s%s，么么哒", d.UserInfo.Uname, d.GuardNum, d.GuardUnit, guardName),
 					}, false)
@@ -556,10 +579,10 @@ func (s *Service) init(code string) {
 
 					s.lastEnterUser = &u
 
-					go func(openId string) {
-						u, err := s.Dao.GetUser(context.Background(), openId)
+					util.RunGr(func() {
+						u, err := s.Dao.GetUser(context.Background(), u.OpenID)
 						if err != nil {
-							log.Errorf("GetUser open_id: %s err: %v", openId, err)
+							log.Errorf("GetUser open_id: %s err: %v", u.OpenID, err)
 							return
 						}
 
@@ -581,7 +604,7 @@ func (s *Service) init(code string) {
 								Text: fmt.Sprintf("欢迎%s酱来到直播间", name),
 							}, false)
 						}
-					}(d.OpenID)
+					})
 
 					break
 				}
@@ -679,7 +702,7 @@ func (s *Service) startLlmReply(force bool) {
 		}
 
 		currentMsg := msgs[len(msgs)-1]
-		if IsRepeatedChar(currentMsg.Message) {
+		if util.IsRepeatedChar(currentMsg.Message) {
 			log.Infof("disable llm by repeated msg: %s", currentMsg.Message)
 			return
 		}
@@ -702,7 +725,7 @@ func (s *Service) startLlmReply(force bool) {
 	}
 
 	s.isLlmProcessing = true
-	go func(msgs []*ChatMessage) {
+	util.RunGr(func() {
 		defer func() {
 			s.isLlmProcessing = false
 		}()
@@ -740,7 +763,7 @@ func (s *Service) startLlmReply(force bool) {
 		s.pushTTS(&tts.NewTaskParams{
 			Text: llmRes,
 		}, false)
-	}(msgs)
+	})
 }
 
 func (s *Service) OnShutdown() error {
@@ -749,6 +772,8 @@ func (s *Service) OnShutdown() error {
 }
 
 func (s *Service) StopConn() {
+	defer util.Recover()
+
 	if s.startResp != nil {
 		s.liveClient.AppEnd(s.startResp.GameInfo.GameID)
 	}

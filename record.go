@@ -1,6 +1,7 @@
 package main
 
 import (
+	"blive-vup-layer/util"
 	"context"
 	"encoding/base64"
 	uuid "github.com/satori/go.uuid"
@@ -9,6 +10,8 @@ import (
 )
 
 func (s *Service) CommitRecord(base64Str string) {
+	defer util.Recover()
+
 	decodedBytes, err := base64.StdEncoding.DecodeString(base64Str)
 	if err != nil {
 		log.Errorf("base64 decoding error: %s", err.Error())
