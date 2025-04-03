@@ -155,6 +155,7 @@ main {
 .card-list-container {
   height: 100%;
   overflow-y: hidden;
+  overflow-x: hidden;
   padding-right: 10px;
   scroll-behavior: smooth;
   // display: flex;

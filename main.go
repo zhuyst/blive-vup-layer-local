@@ -75,6 +75,11 @@ func main() {
 		},
 		PanicHandler: func(err any) {
 			log.Errorf("panic: %s, stack: %s", err, string(debug.Stack()))
+
+			dialog := application.ErrorDialog()
+			dialog.SetTitle("程序发生崩溃，已恢复")
+			dialog.SetMessage(fmt.Sprintf("程序发生崩溃，已恢复\npanic: %s\nstack: %s", err, string(debug.Stack())))
+			dialog.Show()
 		},
 		KeyBindings: map[string]func(window *application.WebviewWindow){
 			"F6": func(window *application.WebviewWindow) {
@@ -203,8 +208,8 @@ type AddSubWindowParams struct {
 func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
 	window := app.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:            fmt.Sprintf("%s - %s", Name, params.Name),
-		Width:            1600,
-		Height:           900,
+		Width:            800,
+		Height:           450,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              params.URL,
 		Frameless:        true,
