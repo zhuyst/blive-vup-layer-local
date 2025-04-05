@@ -28,8 +28,11 @@ export default {
       :uface="item.uface"
       :uname="item.uname"
     >
-      <span>CN¥{{ item.rmb }} </span>
-      <span>投喂了{{ item.guard_num }}个{{ item.guard_unit }}{{ item.guard_name }}</span>
+      <span
+        >CN¥{{ item.rmb }}
+        <br />
+        投喂了{{ item.guard_num }}个{{ item.guard_unit }}{{ item.guard_name }}
+      </span>
     </CardItem>
   </ViewMain>
 </template>

@@ -28,8 +28,11 @@ export default {
       :uface="item.uface"
       :uname="item.uname"
     >
-      <span>CN¥{{ item.rmb }} </span>
-      <span>{{ item.msg }}</span>
+      <span>
+        CN¥{{ item.rmb }}
+        <br />
+        {{ item.msg }}
+      </span>
     </CardItem>
   </ViewMain>
 </template>

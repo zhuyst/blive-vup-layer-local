@@ -209,7 +209,7 @@ func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
 	window := app.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
 		Title:            fmt.Sprintf("%s - %s", Name, params.Name),
 		Width:            800,
-		Height:           450,
+		Height:           510,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              params.URL,
 		Frameless:        true,
