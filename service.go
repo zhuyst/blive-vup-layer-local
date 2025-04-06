@@ -79,6 +79,7 @@ type Service struct {
 	isLlmProcessing             bool
 	isLiving                    bool
 	ttsQueue                    *tts.TTSQueue
+	ttsCh                       <-chan *tts.TaskResult
 	lastEnterUser               *UserData
 	roomIdleTimer               *time.Timer
 }
@@ -111,6 +112,7 @@ func (s *Service) Init(app *App) {
 		log.Fatalf("tts.NewTTS err: %v", err)
 		return
 	}
+	s.ttsQueue = tts.NewTTSQueue(s.TTS)
 
 	s.Sr, err = speechrecognition.NewSpeechRecognition(s.cfg.SpeechRecognition)
 	if err != nil {
@@ -126,6 +128,20 @@ func (s *Service) Init(app *App) {
 
 	s.liveClient = live.NewClient(live.NewConfig(s.cfg.BiliBili.AccessKey, s.cfg.BiliBili.SecretKey, s.cfg.BiliBili.AppId))
 	s.LLM = llm.NewLLM(s.cfg.LLM)
+
+	s.ttsCh = s.ttsQueue.ListenResult()
+	util.RunGr(func() {
+		for r := range s.ttsCh {
+			if err := r.Err; err != nil {
+				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+				continue
+			}
+			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
+				"audio_file_path": r.Fname,
+			})
+			s.roomIdleTimer.Reset(TimeIdleDuration)
+		}
+	})
 }
 
 func (s *Service) OnStartup(ctx context.Context, options application.ServiceOptions) error {
@@ -145,6 +161,12 @@ func NewService(logWriter io.Writer) *Service {
 			DisableLlm:          false,
 			DisableWelcomeLimit: false,
 		},
+
+		roomIdleTimer: time.NewTimer(TimeIdleDuration),
+
+		historyMsgLru:               expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration),
+		llmReplyLru:                 expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration),
+		probabilityLlmTriggerRandom: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -280,34 +302,7 @@ func (s *Service) init(code string) {
 	}
 
 	s.lastEnterUser = nil
-	s.roomIdleTimer = time.NewTimer(TimeIdleDuration)
 
-	s.ttsQueue = tts.NewTTSQueue(s.TTS)
-	ttsCh := s.ttsQueue.ListenResult()
-	util.RunGr(func() {
-		for r := range ttsCh {
-			if err := r.Err; err != nil {
-				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
-				continue
-			}
-			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
-				"audio_file_path": r.Fname,
-			})
-			s.roomIdleTimer.Reset(TimeIdleDuration)
-		}
-	})
-	util.RunGr(func() {
-		for r := range ttsCh {
-			if err := r.Err; err != nil {
-				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
-				continue
-			}
-			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
-				"audio_file_path": r.Fname,
-			})
-			s.roomIdleTimer.Reset(TimeIdleDuration)
-		}
-	})
 	pushTTS := func(params *tts.NewTaskParams, force bool) {
 		if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
 			return
@@ -329,10 +324,6 @@ func (s *Service) init(code string) {
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	})
-
-	s.historyMsgLru = expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration)
-	s.llmReplyLru = expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration)
-	s.probabilityLlmTriggerRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	s.isLiving = true
 	s.isLlmProcessing = false
@@ -679,6 +670,9 @@ func (s *Service) startLlmReply(force bool) {
 	userMap := map[string]struct{}{}
 	probabilityLlmTriggerCounter := -1 // 当前尝试触发的用户不算，所以初始值为-1
 	for _, msg := range s.historyMsgLru.Values() {
+		if msg == nil {
+			continue
+		}
 		if time.Since(msg.Timestamp) <= LlmHistoryDuration {
 			msgs = append(msgs, msg)
 		}
@@ -797,14 +791,6 @@ func (s *Service) StopConn() {
 		s.tk = nil
 	}
 	s.lastEnterUser = nil
-	if s.roomIdleTimer != nil {
-		s.roomIdleTimer.Stop()
-		s.roomIdleTimer = nil
-	}
-	if s.ttsQueue != nil {
-		s.ttsQueue.Close()
-		s.ttsQueue = nil
-	}
 }
 
 func (s *Service) setUser(userData UserData) {
