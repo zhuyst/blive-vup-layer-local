@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
-	"io"
+	"log/slog"
 	"os"
 	"runtime/debug"
 	"time"
@@ -37,7 +37,7 @@ func main() {
 		log.Fatalf("failed to create log file: %v", err)
 		return
 	}
-	logWriter := io.MultiWriter(os.Stdout, logFile)
+	logWriter := util.MultiWriter(os.Stdout, logFile)
 	log.SetOutput(logWriter)
 
 	os.RemoveAll(config.ResultFilePath)
@@ -45,6 +45,12 @@ func main() {
 		log.Fatalf("os.MkdirAll err: %v", err.Error())
 		return
 	}
+	slogLogger := slog.New(
+		slog.NewJSONHandler(logWriter, &slog.HandlerOptions{
+			AddSource: true,
+			Level:     slog.LevelInfo,
+		}),
+	)
 
 	service := NewService(logWriter)
 
@@ -92,6 +98,7 @@ func main() {
 				service.writeResultOK(ResultTypeRecordStop, nil)
 			},
 		},
+		Logger: slogLogger,
 	})
 
 	systemTray := app.NewSystemTray()
@@ -176,9 +183,12 @@ func main() {
 	systemTray.SetMenu(systemTrayMenu)
 	//systemTray.Run()
 
+	log.Infof("App started")
 	if err := app.Run(); err != nil {
-		log.Fatal(err)
+		log.Fatalf("app.Run err: %v", err)
+		return
 	}
+	log.Infof("App exited")
 }
 
 type App struct {

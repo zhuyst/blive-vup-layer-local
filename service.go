@@ -135,7 +135,10 @@ func (s *Service) OnStartup(ctx context.Context, options application.ServiceOpti
 
 func NewService(logWriter io.Writer) *Service {
 	return &Service{
-		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelInfo})),
+		slog: slog.New(slog.NewJSONHandler(logWriter, &slog.HandlerOptions{
+			AddSource: true,
+			Level:     slog.LevelInfo,
+		})),
 
 		livingCfg: LiveConfig{
 			DisableTTS:          false,
@@ -309,6 +312,7 @@ func (s *Service) init(code string) {
 		if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
 			return
 		}
+		log.Infof("pushTTS text: %s", params.Text)
 		if err := s.ttsQueue.Push(params); err != nil {
 			s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 		}
@@ -400,12 +404,13 @@ func (s *Service) init(code string) {
 						break
 					}
 
-					if (danmuData.FansMedalWearingStatus &&
+					if danmuData.FansMedalWearingStatus &&
 						danmuData.FansMedalName == FansMedalName &&
-						danmuData.FansMedalLevel >= LlmReplyFansMedalLevel) || // 带10级粉丝牌
-						danmuData.GuardLevel > 0 || // 舰长
-						(danmuData.Uname == "巫女酱子" || danmuData.Uname == "青云-_-z") {
+						danmuData.FansMedalLevel >= LlmReplyFansMedalLevel { // 带10级粉丝牌
 						s.startLlmReply(false)
+					} else if danmuData.GuardLevel > 0 || // 舰长
+						(danmuData.Uname == "巫女酱子" || danmuData.Uname == "青云-_-z") {
+						s.startLlmReply(true)
 					}
 
 					break
@@ -717,7 +722,7 @@ func (s *Service) startLlmReply(force bool) {
 		}
 
 		r := s.probabilityLlmTriggerRandom.Float64()
-		fmt.Printf("r: %.2f, probability: %.2f\n", r, probability)
+		log.Infof("r: %.2f, probability: %.2f\n", r, probability)
 		if r <= probability {
 			log.Infof("disable llm by probability: %.2f, counter: %d, compare: %.2f", r, probabilityLlmTriggerCounter, probability)
 			return
