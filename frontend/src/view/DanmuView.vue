@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { Events } from '@wailsio/runtime'
 import { useStore } from '@/store/live'
 import ViewMain from '@/component/ViewMain.vue'
-import CardItem from '@/component/CardItem.vue'
+import CardItem from '@/component/CardItemV2.vue'
 
 const store = useStore()
 const { sendDanmu } = store
@@ -27,6 +27,9 @@ export default {
       :key="item.msg_id"
       :uface="item.uface"
       :uname="item.uname"
+      :fans_medal_name="item.fans_medal_name"
+      :fans_medal_level="item.fans_medal_level"
+      :guard_level="item.guard_level"
     >
       <img v-if="item.dm_type === 1" class="danmu-emoji" :src="item.emoji_img_url" />
       <template v-else>

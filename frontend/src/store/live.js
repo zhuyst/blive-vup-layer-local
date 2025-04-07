@@ -1,5 +1,4 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
-import imgSrc from '@/assets/captain_test_loop_1.webp'
 import noFaceSrc from '@/assets/noface.gif'
 
 function getUUID() {
@@ -205,7 +204,7 @@ export const useStore = defineStore('live', {
       this.display_membership.uname = display.uname
       this.display_membership.uface = display.uface
       this.display_membership.playing = true
-      this.display_membership.img_src = imgSrc
+      this.display_membership.img_src = ''
 
       setTimeout(() => {
         this.display_membership.fade_out = true
@@ -224,12 +223,13 @@ export const useStore = defineStore('live', {
         msg_id = getUUID()
         data = {
           msg_id: msg_id,
-          uname: '青云',
+          uname: '这是一个名字很长的用户呀很长很长',
           uface: noFaceSrc,
 
           fans_medal_name: '巫女酱',
           fans_medal_level: 21,
           fans_medal_wearing_status: true,
+          guard_level: 2,
 
           msg: '弹幕内容' + msg_id
         }
