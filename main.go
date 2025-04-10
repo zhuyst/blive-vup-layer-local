@@ -145,36 +145,36 @@ func main() {
 		Name: "弹幕",
 		URL:  "/#/danmu",
 	})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "enter-room",
-	//	Name: "进入直播间",
-	//	URL:  "/#/enter_room",
-	//})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "gift",
-	//	Name: "礼物",
-	//	URL:  "/#/gift",
-	//})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "interact-word",
-	//	Name: "关注直播间",
-	//	URL:  "/#/interact_word",
-	//})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "llm",
-	//	Name: "大模型回复",
-	//	URL:  "/#/llm",
-	//})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "membership",
-	//	Name: "大航海",
-	//	URL:  "/#/membership",
-	//})
-	//a.AddSubWindow(&AddSubWindowParams{
-	//	ID:   "superchat",
-	//	Name: "醒目留言",
-	//	URL:  "/#/superchat",
-	//})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "enter-room",
+		Name: "进入直播间",
+		URL:  "/#/enter_room",
+	})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "gift",
+		Name: "礼物",
+		URL:  "/#/gift",
+	})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "interact-word",
+		Name: "关注直播间",
+		URL:  "/#/interact_word",
+	})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "llm",
+		Name: "大模型回复",
+		URL:  "/#/llm",
+	})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "membership",
+		Name: "大航海",
+		URL:  "/#/membership",
+	})
+	a.AddSubWindow(&AddSubWindowParams{
+		ID:   "superchat",
+		Name: "醒目留言",
+		URL:  "/#/superchat",
+	})
 	systemTrayMenu.AddSeparator()
 	systemTrayMenu.Add("退出").OnClick(func(_ *application.Context) {
 		app.Quit()
@@ -217,11 +217,11 @@ type AddSubWindowParams struct {
 
 func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
 	window := app.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
-		Title:  fmt.Sprintf("%s - %s", Name, params.Name),
-		Width:  1600,
-		Height: 900,
-		//Width:            800,
-		//Height:           510,
+		Title: fmt.Sprintf("%s - %s", Name, params.Name),
+		//Width:  1600,
+		//Height: 900,
+		Width:            800,
+		Height:           510,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              params.URL,
 		Frameless:        true,

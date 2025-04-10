@@ -11,7 +11,7 @@ defineProps({
 </script>
 <script>
 export default {
-  name: 'card-face'
+  name: 'card-face-guard'
 }
 </script>
 <template>
@@ -106,12 +106,12 @@ export default {
         color-interpolation-filters="sRGB"
       >
         <feFlood flood-opacity="0" result="BackgroundImageFix" />
-        <feColorMatrix
+        <!-- <feColorMatrix
           in="SourceAlpha"
           type="matrix"
           values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
           result="hardAlpha"
-        />
+        /> -->
         <feOffset />
         <feGaussianBlur stdDeviation="2.5" />
         <feComposite in2="hardAlpha" operator="out" />
@@ -142,12 +142,12 @@ export default {
         color-interpolation-filters="sRGB"
       >
         <feFlood flood-opacity="0" result="BackgroundImageFix" />
-        <feColorMatrix
+        <!-- <feColorMatrix
           in="SourceAlpha"
           type="matrix"
           values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
           result="hardAlpha"
-        />
+        /> -->
         <feOffset />
         <feGaussianBlur stdDeviation="2.5" />
         <feComposite in2="hardAlpha" operator="out" />

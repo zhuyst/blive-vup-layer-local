@@ -34,13 +34,7 @@ export default {
 }
 </script>
 <template>
-  <div
-    class="card"
-    :class="{
-      'card-guard': guard_level > 0,
-      'card-normal': guard_level === 0
-    }"
-  >
+  <div class="card" :class="[guard_level > 0 ? 'card-guard' : 'card-normal']">
     <CardFaceGuard v-if="guard_level > 0" :uface="uface" />
     <CardFaceNormal v-else :uface="uface" />
     <div class="card-top">
@@ -92,7 +86,7 @@ export default {
       height: rem(73);
 
       border-radius: rem(50);
-      box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.25);
+      box-shadow: 0px 0px rem(5) 0px rgba(0, 0, 0, 0.25);
 
       padding: 0 rem(80) 0 rem(36);
 
@@ -235,6 +229,7 @@ export default {
       line-height: normal;
 
       display: flex;
+      align-items: center;
 
       span {
         overflow: hidden;
