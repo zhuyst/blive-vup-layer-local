@@ -1,6 +1,7 @@
 <script setup>
 import { defineProps } from 'vue'
-import CardFace from './CardFace.vue'
+import CardFaceNormal from './CardFaceNormal.vue'
+import CardFaceGuard from './CardFaceGuard.vue'
 import GuardIcon from './GuardIcon.vue'
 import NoFaceGif from '@/assets/noface.gif'
 
@@ -33,8 +34,15 @@ export default {
 }
 </script>
 <template>
-  <div class="card">
-    <CardFace :uface="uface" />
+  <div
+    class="card"
+    :class="{
+      'card-guard': guard_level > 0,
+      'card-normal': guard_level === 0
+    }"
+  >
+    <CardFaceGuard v-if="guard_level > 0" :uface="uface" />
+    <CardFaceNormal v-else :uface="uface" />
     <div class="card-top">
       <div class="card-name-container">
         <span class="card-name">{{ uname ? uname : '未知' }}</span>
@@ -84,7 +92,6 @@ export default {
       height: rem(73);
 
       border-radius: rem(50);
-      background: linear-gradient(90deg, #ffd51a 0%, #0df 100%);
       box-shadow: 0px 0px 5px 0px rgba(0, 0, 0, 0.25);
 
       padding: 0 rem(80) 0 rem(36);
@@ -120,7 +127,6 @@ export default {
       padding: 0 rem(130) 0 rem(42);
 
       border-radius: rem(50);
-      background: #ffbe46;
 
       display: flex;
       justify-content: center;
@@ -138,7 +144,6 @@ export default {
         bottom: 0;
 
         border-radius: rem(50);
-        border: rem(6) solid #fff1a0;
         z-index: 1;
       }
 
@@ -169,7 +174,6 @@ export default {
         align-items: center;
 
         .fans-medal-level {
-          color: #da7857;
           text-align: center;
           text-shadow: 0px 0px rem(4) rgba(0, 0, 0, 0.2);
           font-family: 优设标题黑;
@@ -236,6 +240,35 @@ export default {
         overflow: hidden;
         text-overflow: ellipsis;
       }
+    }
+  }
+
+  &.card-guard {
+    .card-name-container {
+      background: linear-gradient(90deg, #ffd51a 0%, #0df 100%);
+    }
+    .fans-medal-container {
+      background: #ffbe46;
+    }
+    .fans-medal-border {
+      border: rem(6) solid #fff1a0;
+    }
+    .fans-medal-level {
+      color: #da7857;
+    }
+  }
+  &.card-normal {
+    .card-name-container {
+      background: linear-gradient(90deg, #d068ff 0.01%, #30c4ff 99.99%);
+    }
+    .fans-medal-container {
+      background: #9059ff;
+    }
+    .fans-medal-border {
+      border: 6px solid #c0a0ff;
+    }
+    .fans-medal-level {
+      color: #5768da;
     }
   }
 }

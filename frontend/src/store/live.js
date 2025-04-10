@@ -229,7 +229,7 @@ export const useStore = defineStore('live', {
           fans_medal_name: '巫女酱',
           fans_medal_level: 21,
           fans_medal_wearing_status: true,
-          guard_level: 2,
+          guard_level: Math.floor(Math.random() * 4),
 
           msg: '弹幕内容' + msg_id
         }

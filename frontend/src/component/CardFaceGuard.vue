@@ -37,7 +37,7 @@ export default {
         style="mix-blend-mode: multiply"
       />
       <defs>
-        <clipPath id="clip-path">
+        <clipPath id="card-guard-clip-path">
           <path d="M256.5 258V112.042L186.458 42H40.5V218.686L79.8138 258H256.5Z" />
         </clipPath>
       </defs>
@@ -47,7 +47,7 @@ export default {
         y="0"
         width="288"
         height="291"
-        clip-path="url(#clip-path)"
+        clip-path="url(#card-guard-clip-path)"
         preserveAspectRatio="xMidYMid slice"
       />
       <g filter="url(#filter2_di_86_55)">
