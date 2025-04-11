@@ -57,11 +57,11 @@ type TaskResult struct {
 func (q *TTSQueue) ListenResult() <-chan *TaskResult {
 	ch := make(chan *TaskResult, 64)
 	util.RunGr(func() {
+		defer close(ch)
 		for {
 			select {
 			case <-q.ctx.Done():
 				{
-					close(ch)
 					return
 				}
 			case r := <-q.ch:

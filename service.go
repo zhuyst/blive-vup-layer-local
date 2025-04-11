@@ -79,6 +79,7 @@ type Service struct {
 	isLlmProcessing             bool
 	isLiving                    bool
 	ttsQueue                    *tts.TTSQueue
+	ttsCh                       <-chan *tts.TaskResult
 	lastEnterUser               *UserData
 	roomIdleTimer               *time.Timer
 }
@@ -111,6 +112,7 @@ func (s *Service) Init(app *App) {
 		log.Fatalf("tts.NewTTS err: %v", err)
 		return
 	}
+	s.ttsQueue = tts.NewTTSQueue(s.TTS)
 
 	s.Sr, err = speechrecognition.NewSpeechRecognition(s.cfg.SpeechRecognition)
 	if err != nil {
@@ -126,6 +128,20 @@ func (s *Service) Init(app *App) {
 
 	s.liveClient = live.NewClient(live.NewConfig(s.cfg.BiliBili.AccessKey, s.cfg.BiliBili.SecretKey, s.cfg.BiliBili.AppId))
 	s.LLM = llm.NewLLM(s.cfg.LLM)
+
+	s.ttsCh = s.ttsQueue.ListenResult()
+	util.RunGr(func() {
+		for r := range s.ttsCh {
+			if err := r.Err; err != nil {
+				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
+				continue
+			}
+			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
+				"audio_file_path": r.Fname,
+			})
+			s.roomIdleTimer.Reset(TimeIdleDuration)
+		}
+	})
 }
 
 func (s *Service) OnStartup(ctx context.Context, options application.ServiceOptions) error {
@@ -146,6 +162,12 @@ func NewService(logWriter io.Writer) *Service {
 			DisableWelcomeLimit: false,
 			DisableIdleTTS:      false,
 		},
+
+		roomIdleTimer: time.NewTimer(TimeIdleDuration),
+
+		historyMsgLru:               expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration),
+		llmReplyLru:                 expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration),
+		probabilityLlmTriggerRandom: rand.New(rand.NewSource(time.Now().UnixNano())),
 	}
 }
 
@@ -203,9 +225,10 @@ func (s *Service) SetConfig(configData LiveConfig) *Result {
 }
 
 func (s *Service) pushTTS(params *tts.NewTaskParams, force bool) {
-	if !s.isLiving && !force {
+	if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
 		return
 	}
+	log.Infof("pushTTS text: %s", params.Text)
 	if err := s.ttsQueue.Push(params); err != nil {
 		s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
 	}
@@ -282,43 +305,6 @@ func (s *Service) init(code string) {
 	}
 
 	s.lastEnterUser = nil
-	s.roomIdleTimer = time.NewTimer(TimeIdleDuration)
-
-	s.ttsQueue = tts.NewTTSQueue(s.TTS)
-	ttsCh := s.ttsQueue.ListenResult()
-	util.RunGr(func() {
-		for r := range ttsCh {
-			if err := r.Err; err != nil {
-				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
-				continue
-			}
-			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
-				"audio_file_path": r.Fname,
-			})
-			s.roomIdleTimer.Reset(TimeIdleDuration)
-		}
-	})
-	util.RunGr(func() {
-		for r := range ttsCh {
-			if err := r.Err; err != nil {
-				s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
-				continue
-			}
-			s.writeResultOK(ResultTypeTTS, map[string]interface{}{
-				"audio_file_path": r.Fname,
-			})
-			s.roomIdleTimer.Reset(TimeIdleDuration)
-		}
-	})
-	pushTTS := func(params *tts.NewTaskParams, force bool) {
-		if (!s.isLiving && !force) || s.livingCfg.DisableTTS {
-			return
-		}
-		log.Infof("pushTTS text: %s", params.Text)
-		if err := s.ttsQueue.Push(params); err != nil {
-			s.writeResultError(ResultTypeTTS, CodeInternalError, err.Error())
-		}
-	}
 
 	util.RunGr(func() {
 		for range s.roomIdleTimer.C {
@@ -327,14 +313,10 @@ func (s *Service) init(code string) {
 				continue
 			}
 			text := util.GetRandomStr(RandomIdleReply)
-			pushTTS(&tts.NewTaskParams{Text: text}, false)
+			s.pushTTS(&tts.NewTaskParams{Text: text}, false)
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	})
-
-	s.historyMsgLru = expirable.NewLRU[string, *ChatMessage](512, nil, MessageExpiration)
-	s.llmReplyLru = expirable.NewLRU[string, struct{}](LlmReplyLimitCount, nil, LlmReplyLimitDuration)
-	s.probabilityLlmTriggerRandom = rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	s.isLiving = true
 	s.isLlmProcessing = false
@@ -557,7 +539,7 @@ func (s *Service) init(code string) {
 				}
 			case *proto.CmdLiveStartData:
 				{
-					pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("主人开始直播啦，弹幕姬启动！直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
 					s.isLiving = true
@@ -565,7 +547,7 @@ func (s *Service) init(code string) {
 				}
 			case *proto.CmdLiveEndData:
 				{
-					pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: "主人直播结束啦，今天辛苦了！",
 					}, true)
 					s.isLiving = false
@@ -607,7 +589,7 @@ func (s *Service) init(code string) {
 								name = guardName + name
 							}
 
-							pushTTS(&tts.NewTaskParams{
+							s.pushTTS(&tts.NewTaskParams{
 								Text: fmt.Sprintf("欢迎%s酱来到直播间", name),
 							}, false)
 						}
@@ -617,7 +599,7 @@ func (s *Service) init(code string) {
 				}
 			case *proto.CmdRoomChangeData:
 				{
-					pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("直播间信息发生变更，直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
 					break
@@ -631,14 +613,14 @@ func (s *Service) init(code string) {
 						Timestamp: d.Timestamp,
 						Uname:     d.Uname,
 					})
-					pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("谢谢%s酱关注直播间，么么哒", d.Uname),
 					}, true)
 					break
 				}
 			case *proto.CmdWarningData:
 				{
-					pushTTS(&tts.NewTaskParams{
+					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("直播间收到超管警告，警告信息为：%s", d.Msg),
 					}, true)
 				}
@@ -681,6 +663,9 @@ func (s *Service) startLlmReply(force bool) {
 	userMap := map[string]struct{}{}
 	probabilityLlmTriggerCounter := -1 // 当前尝试触发的用户不算，所以初始值为-1
 	for _, msg := range s.historyMsgLru.Values() {
+		if msg == nil {
+			continue
+		}
 		if time.Since(msg.Timestamp) <= LlmHistoryDuration {
 			msgs = append(msgs, msg)
 		}
@@ -799,14 +784,6 @@ func (s *Service) StopConn() {
 		s.tk = nil
 	}
 	s.lastEnterUser = nil
-	if s.roomIdleTimer != nil {
-		s.roomIdleTimer.Stop()
-		s.roomIdleTimer = nil
-	}
-	if s.ttsQueue != nil {
-		s.ttsQueue.Close()
-		s.ttsQueue = nil
-	}
 }
 
 func (s *Service) setUser(userData UserData) {
