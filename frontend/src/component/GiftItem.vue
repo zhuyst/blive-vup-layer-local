@@ -28,6 +28,10 @@ const parseRmb = computed(() => {
   return rmb.toFixed(1)
 })
 
+const useGuard = computed(() => {
+  return rmb >= 10
+})
+
 const state = reactive({
   is_face_showing: false,
   is_showing: true,
@@ -48,7 +52,7 @@ onMounted(() => {
         }
         state.is_face_showing = true
       },
-      guard_level > 0 ? 1000 : 300
+      useGuard.value ? 1000 : 300
     )
   })
   show_video.value.addEventListener('ended', async () => {
@@ -72,11 +76,11 @@ export default {
 }
 </script>
 <template>
-  <div class="gift-item" :class="[guard_level > 0 ? 'gift-item-guard' : 'gift-item-normal']">
+  <div class="gift-item" :class="[useGuard ? 'gift-item-guard' : 'gift-item-normal']">
     <div class="gift-item-show-start" v-if="state.is_showing">
       <video autoplay playsinline class="gift-item-face-show-video" ref="show_video">
         <source
-          v-if="guard_level > 0"
+          v-if="useGuard"
           src="@/assets/gift-item-face-show-guard.webm"
           type="video/webm"
         />
@@ -84,15 +88,15 @@ export default {
       </video>
     </div>
     <div class="gift-item-show-face-show" v-if="state.is_face_showing">
-      <GiftFaceGuard v-if="guard_level > 0" :uface="uface" />
+      <GiftFaceGuard v-if="useGuard" :uface="uface" />
       <GiftFaceNormal v-else :uface="uface" />
     </div>
     <div class="gift-item-show-after" v-if="!state.is_showing">
       <video class="gift-item-left-video" ref="left_video">
-        <source v-if="guard_level > 0" src="@/assets/gift-item-left-guard.webm" type="video/webm" />
+        <source v-if="useGuard" src="@/assets/gift-item-left-guard.webm" type="video/webm" />
         <source v-else src="@/assets/gift-item-left-normal.webm" type="video/webm" />
       </video>
-      <GiftFaceGuard v-if="guard_level > 0" :uface="uface" />
+      <GiftFaceGuard v-if="useGuard" :uface="uface" />
       <GiftFaceNormal v-else :uface="uface" />
       <div class="gift-item-top">
         <div class="gift-uname-container">
@@ -103,14 +107,14 @@ export default {
       <div class="gift-item-content-container">
         <div class="gift-item-content-background"></div>
         <div class="gift-item-content">
-          <img v-if="guard_level > 0" src="@/assets/charge-guard.png" class="gift-item-charge" />
+          <img v-if="useGuard" src="@/assets/charge-guard.png" class="gift-item-charge" />
           <img v-else src="@/assets/charge-normal.png" class="gift-item-charge" />
           <slot></slot>
         </div>
       </div>
       <div class="gift-item-rmb">
         <img
-          v-if="guard_level > 0"
+          v-if="useGuard"
           src="@/assets/gift-item-rmb-left-guard.svg"
           class="gift-item-rmb-left"
         />

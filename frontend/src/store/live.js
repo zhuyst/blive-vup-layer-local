@@ -322,7 +322,7 @@ export const useStore = defineStore('live', {
           gift_name: '给大佬递茶',
           gift_icon: 'https://i0.hdslb.com/bfs/live/8b40d0470890e7d573995383af8a8ae074d485d9.png',
           gift_num: 5,
-          rmb: 5.0
+          rmb: Math.floor(Math.random() * 20) + 1
         }
       }
       this.gift_list.push(data)

@@ -38,7 +38,8 @@ const state = reactive({
   cfg: {
     disable_tts: false,
     disable_llm: false,
-    disable_welcome_limit: false
+    disable_welcome_limit: false,
+    disable_idle_tts: false
   },
   code: '',
 
@@ -181,6 +182,12 @@ async function handleDisableWelcomeLimitChange() {
   localStorage.setItem('disable_welcome_limit', state.cfg.disable_welcome_limit)
 }
 
+async function handleDisableIdleTTSChange() {
+  console.log('config changed: ', JSON.stringify(state.cfg))
+  await SetConfig(state.cfg)
+  localStorage.setItem('disable_idle_tts', state.cfg.disable_idle_tts)
+}
+
 onMounted(() => {
   const savedDisableTTS = localStorage.getItem('disable_tts')
   if (savedDisableTTS !== null) {
@@ -195,6 +202,11 @@ onMounted(() => {
   const savedDisableWelcomeLimit = localStorage.getItem('disable_welcome_limit')
   if (savedDisableWelcomeLimit !== null) {
     state.cfg.disable_welcome_limit = savedDisableWelcomeLimit === 'true'
+  }
+
+  const savedDisableIdleTTS = localStorage.getItem('disable_idle_tts')
+  if (savedDisableWelcomeLimit !== null) {
+    state.cfg.disable_idle_tts = savedDisableIdleTTS === 'true'
   }
 
   const savedCode = localStorage.getItem('savedCode')
@@ -265,6 +277,14 @@ onMounted(() => {
             @change="handleDisableWelcomeLimitChange"
           />
           <label for="disable_welcome_limit">关闭欢迎进入直播间的播报限制</label>
+          <br />
+          <input
+            type="checkbox"
+            id="disable_idle_tts"
+            v-model="state.cfg.disable_idle_tts"
+            @change="handleDisableIdleTTSChange"
+          />
+          <label for="disable_idle_tts">关闭空闲时的TTS</label>
           <br />
           <div class="window-buttons">
             <button @click="ShowWindow('danmu')">弹幕</button>

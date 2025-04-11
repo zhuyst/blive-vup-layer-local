@@ -144,6 +144,7 @@ func NewService(logWriter io.Writer) *Service {
 			DisableTTS:          false,
 			DisableLlm:          false,
 			DisableWelcomeLimit: false,
+			DisableIdleTTS:      false,
 		},
 	}
 }
@@ -174,6 +175,7 @@ type LiveConfig struct {
 	DisableTTS          bool `json:"disable_tts"`
 	DisableLlm          bool `json:"disable_llm"`
 	DisableWelcomeLimit bool `json:"disable_welcome_limit"`
+	DisableIdleTTS      bool `json:"disable_idle_tts"`
 }
 
 type ChatMessage struct {
@@ -320,7 +322,7 @@ func (s *Service) init(code string) {
 
 	util.RunGr(func() {
 		for range s.roomIdleTimer.C {
-			if s.lastEnterUser == nil {
+			if s.livingCfg.DisableIdleTTS {
 				s.roomIdleTimer.Reset(TimeIdleDuration)
 				continue
 			}
