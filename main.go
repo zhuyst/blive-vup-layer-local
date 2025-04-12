@@ -217,7 +217,9 @@ type AddSubWindowParams struct {
 
 func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
 	window := app.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
-		Title:            fmt.Sprintf("%s - %s", Name, params.Name),
+		Title: fmt.Sprintf("%s - %s", Name, params.Name),
+		//Width:  1600,
+		//Height: 900,
 		Width:            800,
 		Height:           510,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),

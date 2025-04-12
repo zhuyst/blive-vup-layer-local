@@ -3,7 +3,7 @@ import { storeToRefs } from 'pinia'
 import { Events } from '@wailsio/runtime'
 import { useStore } from '@/store/live'
 import ViewMain from '@/component/ViewMain.vue'
-import CardItem from '@/component/CardItem.vue'
+import GiftItem from '@/component/GiftItem.vue'
 
 const store = useStore()
 const { sendGift } = store
@@ -22,18 +22,17 @@ export default {
 </script>
 <template>
   <ViewMain title="礼物" :list="gift_list" @test="sendGift()">
-    <CardItem
+    <GiftItem
       v-for="item in store.gift_list"
       :key="item.msg_id"
       :uface="item.uface"
       :uname="item.uname"
+      :guard_level="item.guard_level"
+      :rmb="item.rmb"
     >
-      <span>
-        <img :src="item.gift_icon" class="gift-icon" /> CN¥{{ item.rmb }}
-        <br />
-        投喂 {{ item.gift_name }}x{{ item.gift_num }}
-      </span>
-    </CardItem>
+      <img v-if="item.gift_icon" :src="item.gift_icon" class="gift-icon" />
+      <span>{{ item.gift_name }}×{{ item.gift_num }}</span>
+    </GiftItem>
   </ViewMain>
 </template>
 

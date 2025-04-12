@@ -130,6 +130,13 @@ export class LiveConfig {
              */
             this["disable_welcome_limit"] = false;
         }
+        if (!("disable_idle_tts" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["disable_idle_tts"] = false;
+        }
 
         Object.assign(this, $$source);
     }

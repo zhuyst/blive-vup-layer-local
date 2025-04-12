@@ -1,5 +1,4 @@
 import { defineStore, acceptHMRUpdate } from 'pinia'
-import imgSrc from '@/assets/captain_test_loop_1.webp'
 import noFaceSrc from '@/assets/noface.gif'
 
 function getUUID() {
@@ -146,6 +145,23 @@ function handleRichText(text) {
   return result
 }
 
+function randomGuardLevel() {
+  return Math.floor(Math.random() * 4)
+}
+
+function getGuardNameByLevel(guard_level) {
+  switch (guard_level) {
+    case 3:
+      return '舰长'
+    case 2:
+      return '提督'
+    case 1:
+      return '总督'
+    default:
+      return ''
+  }
+}
+
 export const useStore = defineStore('live', {
   state: () => ({
     is_test: false,
@@ -174,6 +190,7 @@ export const useStore = defineStore('live', {
     },
     sendMemberShip(data) {
       if (!data) {
+        const guard_level = Math.floor(Math.random() * 3) + 1
         data = {
           msg_id: getUUID(),
           uname: '青云',
@@ -183,10 +200,10 @@ export const useStore = defineStore('live', {
           fans_medal_level: 21,
           fans_medal_wearing_status: true,
 
-          guard_level: 1,
+          guard_level: guard_level,
           guard_num: 5,
           guard_unit: '月',
-          guard_name: '提督',
+          guard_name: getGuardNameByLevel(guard_level),
           rmb: 100
         }
       }
@@ -205,7 +222,7 @@ export const useStore = defineStore('live', {
       this.display_membership.uname = display.uname
       this.display_membership.uface = display.uface
       this.display_membership.playing = true
-      this.display_membership.img_src = imgSrc
+      this.display_membership.img_src = ''
 
       setTimeout(() => {
         this.display_membership.fade_out = true
@@ -224,12 +241,13 @@ export const useStore = defineStore('live', {
         msg_id = getUUID()
         data = {
           msg_id: msg_id,
-          uname: '青云',
+          uname: '这是一个名字很长的用户呀很长很长',
           uface: noFaceSrc,
 
           fans_medal_name: '巫女酱',
           fans_medal_level: 21,
           fans_medal_wearing_status: true,
+          guard_level: randomGuardLevel(),
 
           msg: '弹幕内容' + msg_id
         }
@@ -298,9 +316,13 @@ export const useStore = defineStore('live', {
           fans_medal_name: '巫女酱',
           fans_medal_level: 21,
 
-          gift_name: '礼物名',
+          guard_level: randomGuardLevel(),
+          // guard_level: 0,
+
+          gift_name: '给大佬递茶',
+          gift_icon: 'https://i0.hdslb.com/bfs/live/8b40d0470890e7d573995383af8a8ae074d485d9.png',
           gift_num: 5,
-          rmb: 5
+          rmb: Math.floor(Math.random() * 20) + 1
         }
       }
       this.gift_list.push(data)

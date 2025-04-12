@@ -160,6 +160,7 @@ func NewService(logWriter io.Writer) *Service {
 			DisableTTS:          false,
 			DisableLlm:          false,
 			DisableWelcomeLimit: false,
+			DisableIdleTTS:      false,
 		},
 
 		roomIdleTimer: time.NewTimer(TimeIdleDuration),
@@ -196,6 +197,7 @@ type LiveConfig struct {
 	DisableTTS          bool `json:"disable_tts"`
 	DisableLlm          bool `json:"disable_llm"`
 	DisableWelcomeLimit bool `json:"disable_welcome_limit"`
+	DisableIdleTTS      bool `json:"disable_idle_tts"`
 }
 
 type ChatMessage struct {
@@ -306,7 +308,7 @@ func (s *Service) init(code string) {
 
 	util.RunGr(func() {
 		for range s.roomIdleTimer.C {
-			if s.lastEnterUser == nil {
+			if s.livingCfg.DisableIdleTTS {
 				s.roomIdleTimer.Reset(TimeIdleDuration)
 				continue
 			}
@@ -740,18 +742,18 @@ func (s *Service) startLlmReply(force bool) {
 			UserData:    *lastMsg.User,
 			MsgID:       msgId,
 			UserMessage: lastMsg.Message,
-			LLMResult:   llmRes,
+			LLMResult:   llmRes.Content,
 		})
 		s.historyMsgLru.Add(msgId, &ChatMessage{
 			User: &UserData{
 				Uname: "巫女酱子的辅助机器人",
 			},
-			Message:   llmRes,
+			Message:   llmRes.Content,
 			Timestamp: time.Now(),
 		})
 		s.llmReplyLru.Add(msgId, struct{}{})
 		s.pushTTS(&tts.NewTaskParams{
-			Text: llmRes,
+			Text: llmRes.Content,
 		}, false)
 	})
 }

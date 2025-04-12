@@ -23,6 +23,16 @@ html {
   src: url('@/assets/锐字真言体.ttf');
 }
 
+@font-face {
+  font-family: 优设标题黑;
+  src: url('@/assets/优设标题黑.ttf');
+}
+
+@font-face {
+  font-family: 联想小新潮酷体;
+  src: url('@/assets/联想小新潮酷体.ttf');
+}
+
 body {
   margin: 0;
   overflow: hidden;
@@ -73,6 +83,17 @@ body {
 @keyframes fadeInFromLeft {
   0% {
     transform: translateX(-100%);
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInFromRight {
+  0% {
+    transform: translateX(100%);
     opacity: 0;
   }
   100% {

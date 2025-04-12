@@ -13,9 +13,10 @@ type Config struct {
 }
 
 type LLMConfig struct {
-	APIKey string `toml:"api_key"`
-	Model  string `json:"model"`
-	Prompt string `toml:"prompt"`
+	BaseUrl string `toml:"base_url"`
+	APIKey  string `toml:"api_key"`
+	Model   string `json:"model"`
+	Prompt  string `toml:"prompt"`
 }
 
 type AliyunConfig struct {
