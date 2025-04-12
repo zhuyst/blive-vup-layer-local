@@ -742,18 +742,18 @@ func (s *Service) startLlmReply(force bool) {
 			UserData:    *lastMsg.User,
 			MsgID:       msgId,
 			UserMessage: lastMsg.Message,
-			LLMResult:   llmRes,
+			LLMResult:   llmRes.Content,
 		})
 		s.historyMsgLru.Add(msgId, &ChatMessage{
 			User: &UserData{
 				Uname: "巫女酱子的辅助机器人",
 			},
-			Message:   llmRes,
+			Message:   llmRes.Content,
 			Timestamp: time.Now(),
 		})
 		s.llmReplyLru.Add(msgId, struct{}{})
 		s.pushTTS(&tts.NewTaskParams{
-			Text: llmRes,
+			Text: llmRes.Content,
 		}, false)
 	})
 }

@@ -1,8 +1,7 @@
 db_path="/data/blive-vup-layer.db"
 
 [llm]
-access_key = ""
-secret_key = ""
+base_url = ""
 model = "deepseek-r1"
 api_key = ""
 prompt="""
