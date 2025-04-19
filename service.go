@@ -8,6 +8,7 @@ import (
 	"blive-vup-layer/tts"
 	"blive-vup-layer/util"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	uuid "github.com/satori/go.uuid"
@@ -623,6 +624,14 @@ func (s *Service) init(code string) {
 					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("直播间收到超管警告，警告信息为：%s", d.Msg),
 					}, true)
+				}
+			case map[string]interface{}:
+				{
+					dataJson, err := json.Marshal(d)
+					if err != nil {
+						break
+					}
+					log.Infof("unknown data: %s", string(dataJson))
 				}
 			default:
 				{

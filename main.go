@@ -32,12 +32,18 @@ func main() {
 		log.Fatalf("failed to create logs dir: %v", err)
 		return
 	}
-	logFile, err := os.OpenFile(fmt.Sprintf("logs/%s.txt", time.Now().Format("2006-01-02-15-04-05")), os.O_CREATE|os.O_APPEND|os.O_RDWR, os.ModePerm)
+	logFile, err := os.OpenFile(fmt.Sprintf("logs/%s.txt", time.Now().Format("2006-01-02-15-04-05")), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("failed to create log file: %v", err)
 		return
 	}
-	logWriter := util.MultiWriter(os.Stdout, logFile)
+	defer logFile.Close()
+	if _, err := logFile.Write([]byte("log file created\n")); err != nil {
+		log.Fatalf("failed to write log file: %v", err)
+		return
+	}
+
+	logWriter := util.NewAppLogWriter(logFile)
 	log.SetOutput(logWriter)
 
 	os.RemoveAll(config.ResultFilePath)

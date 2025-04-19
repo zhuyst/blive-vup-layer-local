@@ -54,3 +54,10 @@ func Recover() {
 		dialog.Show()
 	}
 }
+
+func ShowErrorDialog(errMsg string) {
+	dialog := application.ErrorDialog()
+	dialog.SetTitle("程序发生错误")
+	dialog.SetMessage(fmt.Sprintf("程序发生错误\npanic: %s\nstack: %s", errMsg, string(debug.Stack())))
+	dialog.Show()
+}
