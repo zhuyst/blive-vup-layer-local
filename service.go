@@ -77,7 +77,6 @@ type Service struct {
 	historyMsgLru               *expirable.LRU[string, *ChatMessage]
 	llmReplyLru                 *expirable.LRU[string, struct{}]
 	probabilityLlmTriggerRandom *rand.Rand
-	isLlmProcessing             bool
 	isLiving                    bool
 	ttsQueue                    *tts.TTSQueue
 	ttsCh                       <-chan *tts.TaskResult
@@ -320,7 +319,6 @@ func (s *Service) init(code string) {
 	})
 
 	s.isLiving = true
-	s.isLlmProcessing = false
 
 	giftTimerMap := make(map[string]*GiftWithTimer)
 	var giftTimerMapMutex sync.RWMutex
@@ -384,10 +382,6 @@ func (s *Service) init(code string) {
 						Text:      fmt.Sprintf("%s说：%s", d.Uname, d.Msg),
 						PitchRate: pitchRate,
 					}, false)
-
-					if s.isLlmProcessing {
-						break
-					}
 
 					if danmuData.FansMedalWearingStatus &&
 						danmuData.FansMedalName == FansMedalName &&
@@ -725,12 +719,7 @@ func (s *Service) startLlmReply(force bool) {
 		}
 	}
 
-	s.isLlmProcessing = true
 	util.RunGr(func() {
-		defer func() {
-			s.isLlmProcessing = false
-		}()
-
 		llmMsgs := make([]*llm.ChatMessage, len(msgs))
 		var lastMsg *ChatMessage
 		for i, msg := range msgs {
@@ -740,6 +729,7 @@ func (s *Service) startLlmReply(force bool) {
 			}
 			lastMsg = msg
 		}
+
 		llmRes, err := s.LLM.ChatWithLLM(context.Background(), llmMsgs)
 		if err != nil {
 			s.writeResultError(ResultTypeLLM, CodeInternalError, err.Error())

@@ -113,10 +113,18 @@ export default {
 <template>
   <div class="record-audio">
     <button @click="startRecording" :disabled="state.is_recording">开始录音</button>
-    <button @click="stopRecording" :disabled="!state.is_recording">停止录音</button>
+    <button @click="stopRecording" :disabled="!state.is_recording">结束录音</button>
 
-    <p v-if="state.is_recording">录音中...</p>
-    <p v-else>已停止</p>
+    <div>
+      <span> Ctrl+Alt+F6 —— 切换录音状态 </span>
+      <br />
+      <span>Ctrl+Alt+F7 —— 开始录音</span>
+      <br />
+      <span>Ctrl+Alt+F8 —— 结束录音</span>
+      <br />
+      <span v-if="state.is_recording">录音中...</span>
+      <span v-else>已停止</span>
+    </div>
 
     <!-- <audio v-if="state.audio_url" :src="state.audio_url" controls></audio> -->
     <!-- <a :href="state.audio_url" download="recording.wav" v-if="state.audio_url">下载录音</a> -->

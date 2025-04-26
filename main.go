@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"golang.design/x/hotkey"
 	"log/slog"
 	"os"
 	"runtime/debug"
@@ -23,23 +24,28 @@ var iconFS embed.FS
 
 const Name = "巫女酱子弹幕姬"
 
+func logError(errMsg string) {
+	util.ShowErrorDialog(errMsg)
+	log.Error(errMsg)
+}
+
 func main() {
 	defer util.Recover()
 
 	log.SetFormatter(&log.JSONFormatter{})
 
 	if err := os.MkdirAll("logs", os.ModePerm); err != nil {
-		log.Fatalf("failed to create logs dir: %v", err)
+		logError(fmt.Sprintf("failed to create logs dir: %v", err))
 		return
 	}
 	logFile, err := os.OpenFile(fmt.Sprintf("logs/%s.txt", time.Now().Format("2006-01-02-15-04-05")), os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Fatalf("failed to create log file: %v", err)
+		logError(fmt.Sprintf("failed to create log file: %v", err))
 		return
 	}
 	defer logFile.Close()
 	if _, err := logFile.Write([]byte("log file created\n")); err != nil {
-		log.Fatalf("failed to write log file: %v", err)
+		logError(fmt.Sprintf("failed to write log file: %v", err))
 		return
 	}
 
@@ -93,17 +99,17 @@ func main() {
 			dialog.SetMessage(fmt.Sprintf("程序发生崩溃，已恢复\npanic: %s\nstack: %s", err, string(debug.Stack())))
 			dialog.Show()
 		},
-		KeyBindings: map[string]func(window *application.WebviewWindow){
-			"F6": func(window *application.WebviewWindow) {
-				service.writeResultOK(ResultTypeRecordStateChange, nil)
-			},
-			"F7": func(window *application.WebviewWindow) {
-				service.writeResultOK(ResultTypeRecordStart, nil)
-			},
-			"F8": func(window *application.WebviewWindow) {
-				service.writeResultOK(ResultTypeRecordStop, nil)
-			},
-		},
+		//KeyBindings: map[string]func(window *application.WebviewWindow){
+		//	"F6": func(window *application.WebviewWindow) {
+		//		service.writeResultOK(ResultTypeRecordStateChange, nil)
+		//	},
+		//	"F7": func(window *application.WebviewWindow) {
+		//		service.writeResultOK(ResultTypeRecordStart, nil)
+		//	},
+		//	"F8": func(window *application.WebviewWindow) {
+		//		service.writeResultOK(ResultTypeRecordStop, nil)
+		//	},
+		//},
 		Logger: slogLogger,
 	})
 
@@ -188,6 +194,33 @@ func main() {
 
 	systemTray.SetMenu(systemTrayMenu)
 	//systemTray.Run()
+
+	recordStateChangeHk, err := registerHotKey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModAlt}, hotkey.KeyF6, func() {
+		service.writeResultOK(ResultTypeRecordStateChange, nil)
+	})
+	if err != nil {
+		log.Fatalf("registerHotKey Ctrl+Alt+F6 err: %v", err)
+		return
+	}
+	defer recordStateChangeHk.Unregister()
+
+	recordStartHk, err := registerHotKey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModAlt}, hotkey.KeyF7, func() {
+		service.writeResultOK(ResultTypeRecordStart, nil)
+	})
+	if err != nil {
+		log.Fatalf("registerHotKey Ctrl+Alt+F7 err: %v", err)
+		return
+	}
+	defer recordStartHk.Unregister()
+
+	recordStopHk, err := registerHotKey([]hotkey.Modifier{hotkey.ModCtrl, hotkey.ModAlt}, hotkey.KeyF8, func() {
+		service.writeResultOK(ResultTypeRecordStop, nil)
+	})
+	if err != nil {
+		log.Fatalf("registerHotKey Ctrl+Alt+F8 err: %v", err)
+		return
+	}
+	defer recordStopHk.Unregister()
 
 	log.Infof("App started")
 	if err := app.Run(); err != nil {
@@ -280,4 +313,18 @@ func addWindowMenuItem(params *addWindowMenuItemParams) *application.MenuItem {
 		windowMenuItem.SetChecked(true)
 	})
 	return windowMenuItem
+}
+
+func registerHotKey(mods []hotkey.Modifier, key hotkey.Key, handler func()) (*hotkey.Hotkey, error) {
+	hk := hotkey.New(mods, key)
+	if err := hk.Register(); err != nil {
+		return nil, err
+	}
+
+	go func() {
+		for range hk.Keydown() {
+			handler()
+		}
+	}()
+	return hk, nil
 }
