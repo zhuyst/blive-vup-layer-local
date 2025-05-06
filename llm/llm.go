@@ -64,7 +64,7 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMR
 
 	opts := []option.RequestOption{
 		option.WithJSONSet("search_source", "baidu_search_v2"),
-		option.WithJSONSet("instruction", strings.TrimSpace(llm.cfg.Prompt)),
+		option.WithJSONSet("prompt_template", strings.TrimSpace(llm.cfg.Prompt)),
 		option.WithJSONSet("enable_reasoning", true),
 		option.WithJSONSet("response_format", "text"),
 		option.WithJSONSet("enable_corner_markers", false),
@@ -95,7 +95,8 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMR
 	resContent = strings.ReplaceAll(resContent, "喔~", "喵 ")
 	resContent = strings.ReplaceAll(resContent, "~", " ")
 	res.Content = strings.TrimSpace(resContent)
-	log.Infof("LLM result reasoning_content: %s, content: %s", res.ReasoningContent, res.Content)
+	log.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
+	log.Infof("LLM result content: %s", res.Content)
 	return res, nil
 }
 
