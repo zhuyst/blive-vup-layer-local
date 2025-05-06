@@ -82,6 +82,9 @@ type Service struct {
 	ttsCh                       <-chan *tts.TaskResult
 	lastEnterUser               *UserData
 	roomIdleTimer               *time.Timer
+
+	areaName  string // 直播分区
+	roomTitle string // 直播间标题
 }
 
 func (s *Service) Init(app *App) {
@@ -534,6 +537,8 @@ func (s *Service) init(code string) {
 				}
 			case *proto.CmdLiveStartData:
 				{
+					s.areaName = d.AreaName
+					s.roomTitle = d.Title
 					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("主人开始直播啦，弹幕姬启动！直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
@@ -594,6 +599,8 @@ func (s *Service) init(code string) {
 				}
 			case *proto.CmdRoomChangeData:
 				{
+					s.areaName = d.AreaName
+					s.roomTitle = d.Title
 					s.pushTTS(&tts.NewTaskParams{
 						Text: fmt.Sprintf("直播间信息发生变更，直播分区为%s，直播间标题为%s", d.AreaName, d.Title),
 					}, true)
@@ -730,7 +737,17 @@ func (s *Service) startLlmReply(force bool) {
 			lastMsg = msg
 		}
 
-		llmRes, err := s.LLM.ChatWithLLM(context.Background(), llmMsgs)
+		var extraInfo []string
+		if s.areaName != "" {
+			extraInfo = append(extraInfo, fmt.Sprintf("当前直播分区：%s", s.areaName))
+		}
+		if s.roomTitle != "" {
+			extraInfo = append(extraInfo, fmt.Sprintf("当前直播间标题：%s", s.roomTitle))
+		}
+		llmRes, err := s.LLM.ChatWithLLM(context.Background(), &llm.ChatWithLLMParams{
+			ExtraInfos: extraInfo,
+			Messages:   llmMsgs,
+		})
 		if err != nil {
 			s.writeResultError(ResultTypeLLM, CodeInternalError, err.Error())
 			log.Errorf("ChatWithLLM err: %v", err)

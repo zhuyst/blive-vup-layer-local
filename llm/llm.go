@@ -8,6 +8,7 @@ import (
 	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
 	"github.com/openai/openai-go"
 	"github.com/openai/openai-go/option"
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
@@ -44,7 +45,16 @@ type LLMResult struct {
 	Content          string
 }
 
-func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMResult, error) {
+type ChatWithLLMParams struct {
+	ExtraInfos []string
+	Messages   []*ChatMessage
+}
+
+func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LLMResult, error) {
+	requestId := uuid.NewV4().String()
+	l := log.WithField("request_id", requestId)
+
+	messages := params.Messages
 	if len(messages) == 0 {
 		return nil, errors.New("no messages")
 	}
@@ -60,17 +70,29 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMR
 	contentSb.WriteString(currentMsg.String())
 
 	content := contentSb.String()
-	log.Infof("LLM content: %s", content)
+	l.Infof("LLM content: %s", content)
+
+	prompt := strings.TrimSpace(llm.cfg.Prompt)
+	if len(params.ExtraInfos) > 0 {
+		var extraInfoSb strings.Builder
+		for _, extraInfo := range params.ExtraInfos {
+			extraInfoSb.WriteString(fmt.Sprintf("- %s\n", extraInfo))
+		}
+		prompt = strings.Replace(prompt, "{{extra}}", extraInfoSb.String(), 1)
+	} else {
+		prompt = strings.Replace(prompt, "{{extra}}", "无", 1)
+	}
+	l.Infof("LLM prompt: %s", prompt)
 
 	opts := []option.RequestOption{
 		option.WithJSONSet("search_source", "baidu_search_v2"),
-		option.WithJSONSet("prompt_template", strings.TrimSpace(llm.cfg.Prompt)),
+		option.WithJSONSet("prompt_template", prompt),
 		option.WithJSONSet("enable_reasoning", true),
 		option.WithJSONSet("response_format", "text"),
 		option.WithJSONSet("enable_corner_markers", false),
 	}
 
-	params := openai.ChatCompletionNewParams{
+	chatCompletionParams := openai.ChatCompletionNewParams{
 		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
 			//openai.ChatCompletionMessage{Role: "system", Content: llm.cfg.Prompt},
 			openai.ChatCompletionMessage{Role: "user", Content: content},
@@ -79,7 +101,7 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMR
 		TopP:        openai.Float(0.5),
 		Model:       openai.F(llm.cfg.Model),
 	}
-	chatCompletion, err := llm.client.Chat.Completions.New(ctx, params, opts...)
+	chatCompletion, err := llm.client.Chat.Completions.New(ctx, chatCompletionParams, opts...)
 	if err != nil {
 		log.Errorf("LLM err: %v", err)
 		return nil, err
@@ -95,8 +117,8 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, messages []*ChatMessage) (*LLMR
 	resContent = strings.ReplaceAll(resContent, "喔~", "喵 ")
 	resContent = strings.ReplaceAll(resContent, "~", " ")
 	res.Content = strings.TrimSpace(resContent)
-	log.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
-	log.Infof("LLM result content: %s", res.Content)
+	l.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
+	l.Infof("LLM result content: %s", res.Content)
 	return res, nil
 }
 
