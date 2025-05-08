@@ -3,6 +3,7 @@ package llm
 import (
 	"blive-vup-layer/config"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
@@ -12,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 type LLM struct {
@@ -49,6 +51,12 @@ type ChatWithLLMParams struct {
 	ExtraInfos []string
 	Messages   []*ChatMessage
 }
+
+type result struct {
+	Reply string `json:"reply"`
+}
+
+const maxReplyLength = 30
 
 func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LLMResult, error) {
 	requestId := uuid.NewV4().String()
@@ -112,13 +120,26 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 	if reasoningContentI, ok := message.JSON.ExtraFields["reasoning_content"]; ok {
 		res.ReasoningContent = convertUnicode(reasoningContentI.Raw())
 	}
+	l.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
+
 	resContent := chatCompletion.Choices[0].Message.Content
+	l.Infof("LLM result content: %s", resContent)
+
+	var llmResult result
+	if err := json.Unmarshal([]byte(resContent), &llmResult); err != nil {
+		return nil, err
+	}
+
+	resContent = llmResult.Reply
 	resContent = convertUnicode(resContent)
 	resContent = strings.ReplaceAll(resContent, "喔~", "喵 ")
 	resContent = strings.ReplaceAll(resContent, "~", " ")
 	res.Content = strings.TrimSpace(resContent)
-	l.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
-	l.Infof("LLM result content: %s", res.Content)
+
+	contentLength := utf8.RuneCountInString(res.Content)
+	if contentLength > maxReplyLength {
+		return nil, fmt.Errorf("LLM result content too long: %d", contentLength)
+	}
 	return res, nil
 }
 

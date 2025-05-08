@@ -749,7 +749,6 @@ func (s *Service) startLlmReply(force bool) {
 			Messages:   llmMsgs,
 		})
 		if err != nil {
-			s.writeResultError(ResultTypeLLM, CodeInternalError, err.Error())
 			log.Errorf("ChatWithLLM err: %v", err)
 			return
 		}
