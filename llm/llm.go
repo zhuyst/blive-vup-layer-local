@@ -136,6 +136,10 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 	resContent = strings.ReplaceAll(resContent, "~", " ")
 	res.Content = strings.TrimSpace(resContent)
 
+	if res.Content == "" {
+		return nil, errors.New("LLM return empty")
+	}
+
 	contentLength := utf8.RuneCountInString(res.Content)
 	if contentLength > maxReplyLength {
 		return nil, fmt.Errorf("LLM result content too long: %d", contentLength)
