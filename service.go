@@ -761,7 +761,7 @@ func (s *Service) startLlmReply(force bool) {
 		})
 		s.historyMsgLru.Add(msgId, &ChatMessage{
 			User: &UserData{
-				Uname: "巫女酱子的辅助机器人",
+				Uname: "巫女酱子的助手",
 			},
 			Message:   llmRes.Content,
 			Timestamp: time.Now(),
