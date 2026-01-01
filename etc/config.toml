@@ -1,9 +1,6 @@
 db_path="/data/blive-vup-layer.db"
 
 [llm]
-base_url = "https://qianfan.baidubce.com/v2/ai_search/"
-model = "deepseek-r1-250528"
-api_key = ""
 prompt="""
 # Role: 虚拟主播智能互动助手
 
@@ -82,6 +79,24 @@ prompt="""
 ## Initialization
 作为虚拟主播智能互动助手，你已初始化。严格遵守Rules和Workflows，实时处理弹幕输入，并直接输出JSON回复。
 """
+[llm.model]
+[llm.model.baidu]
+base_url = "https://qianfan.baidubce.com/v2/ai_search/"
+ernie_model = "ernie-4.5-turbo-128k"
+deepseek_model = "deepseek-v3.2"
+api_key = ""
+[llm.model.glm]
+base_url = "https://open.bigmodel.cn/api/paas/v4/"
+glm_model = "glm-4.7"
+api_key = ""
+[llm.model.doubao]
+base_url = "https://ark.cn-beijing.volces.com/api/v3"
+doubao_model = "doubao-seed-1-6-251015"
+api_key = ""
+[llm.model.qwen]
+base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+qwen_model = "qwen-plus-latest"
+api_key = ""
 
 [aliyun_tts]
 access_key = ""

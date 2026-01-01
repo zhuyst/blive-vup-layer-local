@@ -6,30 +6,49 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/baidubce/bce-qianfan-sdk/go/qianfan"
-	"github.com/openai/openai-go"
-	"github.com/openai/openai-go/option"
-	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+)
+
+type Model string
+
+const (
+	ModelErnie    = "ernie"
+	ModelDeepSeek = "deepseek"
+	ModelGLM      = "glm"
+	ModelQwen     = "qwen"
+	ModelDoubao   = "doubao"
 )
 
 type LLM struct {
-	cfg            *config.LLMConfig
-	chatCompletion *qianfan.ChatCompletionV2
-	client         *openai.Client
+	cfg         *config.LLMConfig
+	providerMap map[Model]*providerWithModel
 }
 
-func NewLLM(config *config.LLMConfig) *LLM {
-	client := openai.NewClient(
-		option.WithAPIKey(config.APIKey),
-		option.WithBaseURL(config.BaseUrl),
-	)
+type providerWithModel struct {
+	Provider provider
+	Model    string
+}
+
+func NewLLM(cfg *config.LLMConfig) *LLM {
+	baiduP := newBaiduProvider(cfg.Model.Baidu)
+	glmP := newGLMProvider(cfg.Model.GLM)
+	doubaoP := newDoubaoProvider(cfg.Model.Doubao)
+	qwenP := newQwenProvider(cfg.Model.Qwen)
+
+	pm := make(map[Model]*providerWithModel)
+	pm[ModelErnie] = &providerWithModel{baiduP, cfg.Model.Baidu.ErnieModel}
+	pm[ModelDeepSeek] = &providerWithModel{baiduP, cfg.Model.Baidu.DeepSeekModel}
+	pm[ModelGLM] = &providerWithModel{glmP, cfg.Model.GLM.GlmModel}
+	pm[ModelDoubao] = &providerWithModel{doubaoP, cfg.Model.Doubao.DoubaoModel}
+	pm[ModelQwen] = &providerWithModel{qwenP, cfg.Model.Qwen.QwenModel}
 	return &LLM{
-		cfg:    config,
-		client: client,
+		cfg:         cfg,
+		providerMap: pm,
 	}
 }
 
@@ -48,6 +67,7 @@ type LLMResult struct {
 }
 
 type ChatWithLLMParams struct {
+	Model      Model
 	ExtraInfos []string
 	Messages   []*ChatMessage
 }
@@ -60,7 +80,10 @@ const maxReplyLength = 30
 
 func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LLMResult, error) {
 	requestId := uuid.NewV4().String()
-	l := log.WithField("request_id", requestId)
+	l := log.WithFields(log.Fields{
+		"request_id": requestId,
+		"model":      params.Model,
+	})
 
 	messages := params.Messages
 	if len(messages) == 0 {
@@ -92,38 +115,29 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 	}
 	l.Infof("LLM prompt: %s", prompt)
 
-	opts := []option.RequestOption{
-		option.WithJSONSet("search_source", "baidu_search_v2"),
-		option.WithJSONSet("prompt_template", prompt),
-		option.WithJSONSet("enable_reasoning", true),
-		option.WithJSONSet("response_format", "text"),
-		option.WithJSONSet("enable_corner_markers", false),
+	p, ok := llm.providerMap[params.Model]
+	if !ok {
+		return nil, errors.New("invalid model")
 	}
 
-	chatCompletionParams := openai.ChatCompletionNewParams{
-		Messages: openai.F([]openai.ChatCompletionMessageParamUnion{
-			//openai.ChatCompletionMessage{Role: "system", Content: llm.cfg.Prompt},
-			openai.ChatCompletionMessage{Role: "user", Content: content},
-		}),
-		Temperature: openai.Float(0.5),
-		TopP:        openai.Float(0.5),
-		Model:       openai.F(llm.cfg.Model),
+	chatPar := &chatParams{
+		Prompt:  prompt,
+		Content: content,
+		Model:   p.Model,
 	}
-	chatCompletion, err := llm.client.Chat.Completions.New(ctx, chatCompletionParams, opts...)
+	chatRes, err := p.Provider.chatWithLLM(ctx, chatPar)
 	if err != nil {
-		log.Errorf("LLM err: %v", err)
 		return nil, err
 	}
 
 	res := &LLMResult{}
-	message := chatCompletion.Choices[0].Message
-	if reasoningContentI, ok := message.JSON.ExtraFields["reasoning_content"]; ok {
-		res.ReasoningContent = convertUnicode(reasoningContentI.Raw())
-	}
+	resContent := convertUnicode(chatRes.Content)
+	res.ReasoningContent = convertUnicode(chatRes.ReasoningContent)
 	l.Infof("LLM result reasoning_content: %s", res.ReasoningContent)
-
-	resContent := chatCompletion.Choices[0].Message.Content
 	l.Infof("LLM result content: %s", resContent)
+
+	resContent = strings.TrimPrefix(resContent, "```json")
+	resContent = strings.TrimSuffix(resContent, "```")
 
 	var llmResult result
 	if err := json.Unmarshal([]byte(resContent), &llmResult); err != nil {
@@ -145,6 +159,21 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 		return nil, fmt.Errorf("LLM result content too long: %d", contentLength)
 	}
 	return res, nil
+}
+
+type chatParams struct {
+	Prompt  string
+	Content string
+	Model   string
+}
+
+type chatResult struct {
+	Content          string
+	ReasoningContent string
+}
+
+type provider interface {
+	chatWithLLM(ctx context.Context, params *chatParams) (*chatResult, error)
 }
 
 func convertUnicode(s string) string {

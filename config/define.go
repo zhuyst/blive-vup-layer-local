@@ -13,10 +13,40 @@ type Config struct {
 }
 
 type LLMConfig struct {
-	BaseUrl string `toml:"base_url"`
-	APIKey  string `toml:"api_key"`
-	Model   string `json:"model"`
-	Prompt  string `toml:"prompt"`
+	Model  *LLMModelConfig `toml:"model"`
+	Prompt string          `toml:"prompt"`
+}
+
+type LLMModelConfig struct {
+	Baidu  *LLMModelBaiduConfig  `toml:"baidu"`
+	GLM    *LLMModelGLMConfig    `toml:"glm"`
+	Doubao *LLMModelDoubaoConfig `toml:"doubao"`
+	Qwen   *LLMModelQwenConfig   `toml:"qwen"`
+}
+
+type LLMModelBaiduConfig struct {
+	BaseUrl       string `toml:"base_url"`
+	APIKey        string `toml:"api_key"`
+	ErnieModel    string `json:"ernie_model"`
+	DeepSeekModel string `json:"deepseek_model"`
+}
+
+type LLMModelGLMConfig struct {
+	BaseUrl  string `toml:"base_url"`
+	APIKey   string `toml:"api_key"`
+	GlmModel string `toml:"glm_model"`
+}
+
+type LLMModelDoubaoConfig struct {
+	BaseUrl     string `toml:"base_url"`
+	APIKey      string `toml:"api_key"`
+	DoubaoModel string `toml:"doubao_model"`
+}
+
+type LLMModelQwenConfig struct {
+	BaseUrl   string `toml:"base_url"`
+	APIKey    string `toml:"api_key"`
+	QwenModel string `toml:"qwen_model"`
 }
 
 type AliyunConfig struct {

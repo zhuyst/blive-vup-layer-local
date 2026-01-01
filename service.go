@@ -10,14 +10,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/golang-lru/v2/expirable"
-	uuid "github.com/satori/go.uuid"
-	log "github.com/sirupsen/logrus"
-	"github.com/vtb-link/bianka/basic"
-	"github.com/vtb-link/bianka/live"
-	"github.com/vtb-link/bianka/proto"
-	"github.com/wailsapp/wails/v3/pkg/application"
-	"golang.org/x/exp/slog"
 	"io"
 	"math/rand"
 	"net/http"
@@ -26,6 +18,15 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/hashicorp/golang-lru/v2/expirable"
+	uuid "github.com/satori/go.uuid"
+	log "github.com/sirupsen/logrus"
+	"github.com/vtb-link/bianka/basic"
+	"github.com/vtb-link/bianka/live"
+	"github.com/vtb-link/bianka/proto"
+	"github.com/wailsapp/wails/v3/pkg/application"
+	"golang.org/x/exp/slog"
 )
 
 const (
@@ -197,10 +198,11 @@ type GiftWithTimer struct {
 }
 
 type LiveConfig struct {
-	DisableTTS          bool `json:"disable_tts"`
-	DisableLlm          bool `json:"disable_llm"`
-	DisableWelcomeLimit bool `json:"disable_welcome_limit"`
-	DisableIdleTTS      bool `json:"disable_idle_tts"`
+	DisableTTS          bool      `json:"disable_tts"`
+	DisableLlm          bool      `json:"disable_llm"`
+	DisableWelcomeLimit bool      `json:"disable_welcome_limit"`
+	DisableIdleTTS      bool      `json:"disable_idle_tts"`
+	Model               llm.Model `json:"model"`
 }
 
 type ChatMessage struct {
@@ -745,6 +747,7 @@ func (s *Service) startLlmReply(force bool) {
 			extraInfo = append(extraInfo, fmt.Sprintf("当前直播间标题：%s", s.roomTitle))
 		}
 		llmRes, err := s.LLM.ChatWithLLM(context.Background(), &llm.ChatWithLLMParams{
+			Model:      s.livingCfg.Model,
 			ExtraInfos: extraInfo,
 			Messages:   llmMsgs,
 		})

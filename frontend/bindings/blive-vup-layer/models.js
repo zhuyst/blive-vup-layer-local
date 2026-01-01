@@ -8,6 +8,9 @@ import {Create as $Create} from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
+import * as llm$0 from "./llm/models.js";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore: Unused imports
 import * as application$0 from "../github.com/wailsapp/wails/v3/pkg/application/models.js";
 
 export class App {
@@ -136,6 +139,13 @@ export class LiveConfig {
              * @type {boolean}
              */
             this["disable_idle_tts"] = false;
+        }
+        if (!("model" in $$source)) {
+            /**
+             * @member
+             * @type {llm$0.Model}
+             */
+            this["model"] = (/** @type {llm$0.Model} */(""));
         }
 
         Object.assign(this, $$source);

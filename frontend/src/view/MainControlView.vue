@@ -39,7 +39,8 @@ const state = reactive({
     disable_tts: false,
     disable_llm: false,
     disable_welcome_limit: false,
-    disable_idle_tts: false
+    disable_idle_tts: false,
+    model: 'deepseek'
   },
   code: '',
 
@@ -188,6 +189,12 @@ async function handleDisableIdleTTSChange() {
   localStorage.setItem('disable_idle_tts', state.cfg.disable_idle_tts)
 }
 
+async function handleModelChange() {
+  console.log('config changed: ', JSON.stringify(state.cfg))
+  await SetConfig(state.cfg)
+  localStorage.setItem('model', state.cfg.model)
+}
+
 onMounted(() => {
   const savedDisableTTS = localStorage.getItem('disable_tts')
   if (savedDisableTTS !== null) {
@@ -205,8 +212,13 @@ onMounted(() => {
   }
 
   const savedDisableIdleTTS = localStorage.getItem('disable_idle_tts')
-  if (savedDisableWelcomeLimit !== null) {
+  if (savedDisableIdleTTS !== null) {
     state.cfg.disable_idle_tts = savedDisableIdleTTS === 'true'
+  }
+
+  const savedModel = localStorage.getItem('model')
+  if (savedModel !== null) {
+    state.cfg.model = savedModel
   }
 
   const savedCode = localStorage.getItem('savedCode')
@@ -286,6 +298,29 @@ onMounted(() => {
           />
           <label for="disable_idle_tts">关闭空闲时的TTS</label>
           <br />
+          <div class="model-select">
+            <span>大模型选择：</span>
+            <label>
+              <input type="radio" v-model="state.cfg.model" value="ernie" @change="handleModelChange" />
+              文心一言
+            </label>
+            <label>
+              <input type="radio" v-model="state.cfg.model" value="deepseek" @change="handleModelChange" />
+              DeepSeek
+            </label>
+            <label>
+              <input type="radio" v-model="state.cfg.model" value="glm" @change="handleModelChange" />
+              智谱GLM
+            </label>
+            <label>
+              <input type="radio" v-model="state.cfg.model" value="qwen" @change="handleModelChange" />
+              通义千问
+            </label>
+            <label>
+              <input type="radio" v-model="state.cfg.model" value="doubao" @change="handleModelChange" />
+              豆包
+            </label>
+          </div>
           <div class="window-buttons">
             <button @click="ShowWindow('danmu')">弹幕</button>
             <button @click="ShowWindow('enter-room')">进入直播间</button>
@@ -359,5 +394,13 @@ onMounted(() => {
 }
 
 .status-msg {
+}
+
+.model-select {
+  margin: 10px 0;
+}
+
+.model-select label {
+  margin-right: 10px;
 }
 </style>
