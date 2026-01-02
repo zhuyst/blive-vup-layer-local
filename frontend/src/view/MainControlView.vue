@@ -82,8 +82,8 @@ function handleReenterCode() {
 }
 
 Events.On('room', async function (event) {
-  const data = event.data[0]
-  console.log('[EventsOn]收到消息：', data)
+  const data = event.data
+  console.log('[EventsOn]收到消息：', event)
 
   if (data.code !== 0) {
     state.is_connect_room = false
@@ -108,42 +108,42 @@ Events.On('room', async function (event) {
   localStorage.setItem('savedCode', state.code)
 })
 Events.On('danmu', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendDanmu(data.data)
 })
 Events.On('superchat', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendSc(data.data)
 })
 Events.On('gift', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendGift(data.data)
 })
 Events.On('guard', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendMemberShip(data.data)
 })
 Events.On('tts', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendTTS(data.data)
 })
 Events.On('llm', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendLLM(data.data)
 })
 Events.On('enter_room', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendEnterRoom(data.data)
 })
 Events.On('interact_word', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendInteractWord(data.data)
 })

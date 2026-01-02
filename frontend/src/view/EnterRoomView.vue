@@ -10,7 +10,7 @@ const { sendEnterRoom } = store
 const { enter_room_list } = storeToRefs(store)
 
 Events.On('enter_room', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendEnterRoom(data.data)
 })

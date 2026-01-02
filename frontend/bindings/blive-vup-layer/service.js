@@ -4,7 +4,7 @@
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import {Call as $Call, Create as $Create} from "@wailsio/runtime";
+import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Create } from "@wailsio/runtime";
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
@@ -12,63 +12,60 @@ import * as $models from "./models.js";
 
 /**
  * @param {string} base64Str
- * @returns {Promise<void> & { cancel(): void }}
+ * @returns {$CancellablePromise<void>}
  */
 export function CommitRecord(base64Str) {
-    let $resultPromise = /** @type {any} */($Call.ByID(1889488809, base64Str));
-    return $resultPromise;
+    return $Call.ByID(1889488809, base64Str);
 }
 
 /**
  * @param {$models.App | null} app
- * @returns {Promise<void> & { cancel(): void }}
+ * @returns {$CancellablePromise<void>}
  */
 export function Init(app) {
-    let $resultPromise = /** @type {any} */($Call.ByID(1184374307, app));
-    return $resultPromise;
+    return $Call.ByID(1184374307, app);
 }
 
 /**
  * @param {$models.InitRequestData | null} initData
- * @returns {Promise<$models.Result | null> & { cancel(): void }}
+ * @returns {$CancellablePromise<$models.Result | null>}
  */
 export function InitConn(initData) {
-    let $resultPromise = /** @type {any} */($Call.ByID(2248557669, initData));
-    let $typingPromise = /** @type {any} */($resultPromise.then(($result) => {
+    return $Call.ByID(2248557669, initData).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType1($result);
     }));
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
+}
+
+/**
+ * @returns {$CancellablePromise<void>}
+ */
+export function OnShutdown() {
+    return $Call.ByID(2383980714);
 }
 
 /**
  * @param {$models.LiveConfig} configData
- * @returns {Promise<$models.Result | null> & { cancel(): void }}
+ * @returns {$CancellablePromise<$models.Result | null>}
  */
 export function SetConfig(configData) {
-    let $resultPromise = /** @type {any} */($Call.ByID(2392563281, configData));
-    let $typingPromise = /** @type {any} */($resultPromise.then(($result) => {
+    return $Call.ByID(2392563281, configData).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType1($result);
     }));
-    $typingPromise.cancel = $resultPromise.cancel.bind($resultPromise);
-    return $typingPromise;
 }
 
 /**
  * @param {string} windowID
- * @returns {Promise<void> & { cancel(): void }}
+ * @returns {$CancellablePromise<void>}
  */
 export function ShowWindow(windowID) {
-    let $resultPromise = /** @type {any} */($Call.ByID(3242331696, windowID));
-    return $resultPromise;
+    return $Call.ByID(3242331696, windowID);
 }
 
 /**
- * @returns {Promise<void> & { cancel(): void }}
+ * @returns {$CancellablePromise<void>}
  */
 export function StopConn() {
-    let $resultPromise = /** @type {any} */($Call.ByID(3932225391));
-    return $resultPromise;
+    return $Call.ByID(3932225391);
 }
 
 // Private type creation functions

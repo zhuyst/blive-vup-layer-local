@@ -4,7 +4,9 @@ import (
 	"blive-vup-layer/util"
 	"encoding/json"
 	"fmt"
+
 	log "github.com/sirupsen/logrus"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type EventResult struct {
@@ -47,5 +49,8 @@ func (s *Service) writeResult(res *EventResult) {
 		}
 		l.Log(logLevel, errMsg)
 	}
-	s.app.App.EmitEvent(res.Type, res)
+	s.app.App.Event.EmitEvent(&application.CustomEvent{
+		Name: res.Type,
+		Data: res,
+	})
 }

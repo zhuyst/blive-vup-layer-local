@@ -10,7 +10,7 @@ const { sendInteractWord } = store
 const { interact_word_list } = storeToRefs(store)
 
 Events.On('interact_word', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendInteractWord(data.data)
 })

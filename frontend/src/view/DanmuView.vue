@@ -10,7 +10,7 @@ const { sendDanmu } = store
 const { danmu_list } = storeToRefs(store)
 
 Events.On('danmu', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendDanmu(data.data)
 })

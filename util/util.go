@@ -3,11 +3,18 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"math/rand"
 	"runtime/debug"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
+
+var app *application.App
+
+func SetApp(a *application.App) {
+	app = a
+}
 
 func MapToStruct(m map[string]interface{}, s interface{}) error {
 	j, err := json.Marshal(m)
@@ -48,7 +55,7 @@ func Recover() {
 	if err := recover(); err != nil {
 		log.Errorf("panic: %s, stack: %s", err, string(debug.Stack()))
 
-		dialog := application.ErrorDialog()
+		dialog := app.Dialog.Error()
 		dialog.SetTitle("程序发生崩溃，已恢复")
 		dialog.SetMessage(fmt.Sprintf("程序发生崩溃，已恢复\npanic: %s\nstack: %s", err, string(debug.Stack())))
 		dialog.Show()
@@ -56,7 +63,7 @@ func Recover() {
 }
 
 func ShowErrorDialog(errMsg string) {
-	dialog := application.ErrorDialog()
+	dialog := app.Dialog.Error()
 	dialog.SetTitle("程序发生错误")
 	dialog.SetMessage(fmt.Sprintf("程序发生错误\npanic: %s\nstack: %s", errMsg, string(debug.Stack())))
 	dialog.Show()

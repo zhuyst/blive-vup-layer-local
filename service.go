@@ -25,7 +25,6 @@ import (
 	"github.com/vtb-link/bianka/basic"
 	"github.com/vtb-link/bianka/live"
 	"github.com/vtb-link/bianka/proto"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/exp/slog"
 )
 
@@ -90,6 +89,7 @@ type Service struct {
 
 func (s *Service) Init(app *App) {
 	s.app = app
+	s.appContext = app.App.Context()
 
 	const (
 		ConfigProdFilePath = "./etc/config.toml"
@@ -97,7 +97,7 @@ func (s *Service) Init(app *App) {
 	)
 
 	var configFilePath string
-	envInfo := app.App.Environment()
+	envInfo := app.App.Env.Info()
 	if envInfo.Debug {
 		configFilePath = ConfigDevFilePath
 	} else {
@@ -146,11 +146,6 @@ func (s *Service) Init(app *App) {
 			s.roomIdleTimer.Reset(TimeIdleDuration)
 		}
 	})
-}
-
-func (s *Service) OnStartup(ctx context.Context, options application.ServiceOptions) error {
-	s.appContext = ctx
-	return nil
 }
 
 func NewService(logWriter io.Writer) *Service {

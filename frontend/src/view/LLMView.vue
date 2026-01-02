@@ -9,7 +9,7 @@ const { sendLLM } = store
 const { llm_list } = storeToRefs(store)
 
 Events.On('llm', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendLLM(data.data)
 })

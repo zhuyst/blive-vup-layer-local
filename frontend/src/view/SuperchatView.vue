@@ -10,7 +10,7 @@ const { sendSc } = store
 const { sc_list } = storeToRefs(store)
 
 Events.On('superchat', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   sendSc(data.data)
 })

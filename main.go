@@ -6,14 +6,14 @@ import (
 	"embed"
 	_ "embed"
 	"fmt"
+	"log/slog"
+	"os"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"golang.design/x/hotkey"
-	"log/slog"
-	"os"
-	"runtime/debug"
-	"time"
 )
 
 //go:embed all:frontend/dist
@@ -67,11 +67,12 @@ func main() {
 	service := NewService(logWriter)
 
 	var mainWindow *application.WebviewWindow
-	app := application.New(application.Options{
+	var app *application.App
+	app = application.New(application.Options{
 		Name:        Name,
 		Description: Name,
 		Services: []application.Service{
-			application.NewService(service, application.ServiceOptions{
+			application.NewServiceWithOptions(service, application.ServiceOptions{
 				Route: "/result/",
 			}),
 		},
@@ -91,12 +92,12 @@ func main() {
 				}
 			},
 		},
-		PanicHandler: func(err any) {
-			log.Errorf("panic: %s, stack: %s", err, string(debug.Stack()))
+		PanicHandler: func(detail *application.PanicDetails) {
+			log.Errorf("panic: %s, stack: %s", detail.Error, detail.FullStackTrace)
 
-			dialog := application.ErrorDialog()
+			dialog := app.Dialog.Error()
 			dialog.SetTitle("程序发生崩溃，已恢复")
-			dialog.SetMessage(fmt.Sprintf("程序发生崩溃，已恢复\npanic: %s\nstack: %s", err, string(debug.Stack())))
+			dialog.SetMessage(fmt.Sprintf("程序发生崩溃，已恢复\npanic: %s\nstack: %s", detail.Error, detail.FullStackTrace))
 			dialog.Show()
 		},
 		//KeyBindings: map[string]func(window *application.WebviewWindow){
@@ -112,8 +113,9 @@ func main() {
 		//},
 		Logger: slogLogger,
 	})
+	util.SetApp(app)
 
-	systemTray := app.NewSystemTray()
+	systemTray := app.SystemTray.New()
 	systemTray.SetLabel(Name)
 	systemTrayMenu := app.NewMenu()
 
@@ -124,7 +126,7 @@ func main() {
 	}
 	service.Init(a)
 
-	mainWindow = app.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	mainWindow = app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            fmt.Sprintf("%s - 总控台", Name),
 		Width:            1600,
 		Height:           900,
@@ -255,7 +257,7 @@ type AddSubWindowParams struct {
 }
 
 func (app *App) AddSubWindow(params *AddSubWindowParams) *SubWindow {
-	window := app.App.NewWebviewWindowWithOptions(application.WebviewWindowOptions{
+	window := app.App.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title: fmt.Sprintf("%s - %s", Name, params.Name),
 		//Width:  1600,
 		//Height: 900,

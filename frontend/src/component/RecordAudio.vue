@@ -86,7 +86,7 @@ const stopRecording = () => {
 }
 
 Events.On('record_state_change', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   if (state.is_recording) {
     stopRecording()
@@ -95,12 +95,12 @@ Events.On('record_state_change', function (event) {
   }
 })
 Events.On('record_start', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   startRecording()
 })
 Events.On('record_stop', function (event) {
-  const data = event.data[0]
+  const data = event.data
   console.log('[EventsOn]收到消息：', data)
   stopRecording()
 })
