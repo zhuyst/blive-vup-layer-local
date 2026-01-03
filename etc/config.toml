@@ -83,7 +83,7 @@ prompt="""
 [llm.model.baidu]
 base_url = "https://qianfan.baidubce.com/v2/ai_search/"
 ernie_model = "ernie-4.5-turbo-128k"
-deepseek_model = "deepseek-v3.2"
+deepseek_model = "deepseek-v3.2-think"
 api_key = ""
 [llm.model.glm]
 base_url = "https://open.bigmodel.cn/api/paas/v4/"

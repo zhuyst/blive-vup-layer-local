@@ -1,3 +1,5 @@
+// https://ai.baidu.com/ai-doc/AppBuilder/amaxd2det
+
 package llm
 
 import (
@@ -22,6 +24,12 @@ func newBaiduProvider(cfg *config.LLMModelBaiduConfig) *baiduProvider {
 	return &baiduProvider{client: client}
 }
 
+type BaiduSearchItemsPostprocess struct {
+	WindowSize int `json:"window_size"`
+	StrideSize int `json:"stride_size"`
+	MaxSlice   int `json:"max_slice"`
+}
+
 func (p *baiduProvider) chatWithLLM(ctx context.Context, params *chatParams) (*chatResult, error) {
 	opts := []option.RequestOption{
 		option.WithJSONSet("search_source", "baidu_search_v2"),
@@ -29,6 +37,11 @@ func (p *baiduProvider) chatWithLLM(ctx context.Context, params *chatParams) (*c
 		option.WithJSONSet("enable_reasoning", true),
 		option.WithJSONSet("response_format", "text"),
 		option.WithJSONSet("enable_corner_markers", false),
+		option.WithJSONSet("search_items_postprocess", BaiduSearchItemsPostprocess{
+			WindowSize: 400,
+			StrideSize: 300,
+			MaxSlice:   4,
+		}),
 	}
 
 	chatCompletionParams := openai.ChatCompletionNewParams{

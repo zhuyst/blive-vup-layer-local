@@ -116,10 +116,18 @@ func (p *doubaoProvider) chatWithLLM(ctx context.Context, params *chatParams) (*
 	res := &chatResult{}
 	for _, output := range resp.Output {
 		if reasoning := output.GetReasoning(); reasoning != nil {
-			res.ReasoningContent = reasoning.GetSummary()[0].GetText()
+			summary := reasoning.GetSummary()
+			if len(summary) == 0 {
+				continue
+			}
+			res.ReasoningContent = summary[0].GetText()
 		}
 		if message := output.GetOutputMessage(); message != nil {
-			res.Content = message.Content[0].GetText().GetText()
+			content := message.GetContent()
+			if len(content) == 0 {
+				continue
+			}
+			res.Content = content[0].GetText().GetText()
 		}
 	}
 
