@@ -3,6 +3,7 @@ package llm
 import (
 	"blive-vup-layer/config"
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/openai/openai-go/v3"
@@ -91,6 +92,10 @@ func (p *qwenProvider) chatWithLLM(ctx context.Context, params *chatParams) (*ch
 	}
 	if err := stream.Err(); err != nil {
 		return nil, err
+	}
+
+	if len(chatCompletion.Choices) == 0 {
+		return nil, errors.New("empty choices")
 	}
 
 	res := &chatResult{}

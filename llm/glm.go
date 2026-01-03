@@ -3,6 +3,7 @@ package llm
 import (
 	"blive-vup-layer/config"
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -85,6 +86,10 @@ func (p *glmProvider) chatWithLLM(ctx context.Context, params *chatParams) (*cha
 		log.Errorf("LLM err: %v", err)
 		return nil, err
 	}
+	if len(chatCompletion.Choices) == 0 {
+		return nil, errors.New("empty choices")
+	}
+
 	res := &chatResult{}
 
 	message := chatCompletion.Choices[0].Message
