@@ -118,7 +118,7 @@ wails3 dev
 
 ```bash
 # Windows
-wails3 build
+PRODUCTION=true wails3 build
 ```
 
 构建产物位于 `bin/` 目录。
