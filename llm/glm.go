@@ -79,7 +79,7 @@ func (p *glmProvider) chatWithLLM(ctx context.Context, params *chatParams) (*cha
 		},
 		Temperature: openai.Float(0.5),
 		TopP:        openai.Float(0.5),
-		Model:       params.Model,
+		Model:       params.ModelName,
 	}
 	chatCompletion, err := p.client.Chat.Completions.New(ctx, chatCompletionParams, opts...)
 	if err != nil {

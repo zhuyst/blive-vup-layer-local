@@ -14,24 +14,25 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type Model string
+type ModelType string
 
 const (
-	ModelErnie    = "ernie"
-	ModelDeepSeek = "deepseek"
-	ModelGLM      = "glm"
-	ModelQwen     = "qwen"
-	ModelDoubao   = "doubao"
+	ModelTypeErnie    ModelType = "ernie"
+	ModelTypeDeepSeek ModelType = "deepseek"
+	ModelTypeGLM      ModelType = "glm"
+	ModelTypeQwen     ModelType = "qwen"
+	ModelTypeDoubao   ModelType = "doubao"
 )
 
 type LLM struct {
 	cfg         *config.LLMConfig
-	providerMap map[Model]*providerWithModel
+	providerMap map[ModelType]*providerWithModel
 }
 
 type providerWithModel struct {
-	Provider provider
-	Model    string
+	Provider  provider
+	ModelType ModelType
+	ModelName string
 }
 
 func NewLLM(cfg *config.LLMConfig) *LLM {
@@ -40,12 +41,32 @@ func NewLLM(cfg *config.LLMConfig) *LLM {
 	doubaoP := newDoubaoProvider(cfg.Model.Doubao)
 	qwenP := newQwenProvider(cfg.Model.Qwen)
 
-	pm := make(map[Model]*providerWithModel)
-	pm[ModelErnie] = &providerWithModel{baiduP, cfg.Model.Baidu.ErnieModel}
-	pm[ModelDeepSeek] = &providerWithModel{baiduP, cfg.Model.Baidu.DeepSeekModel}
-	pm[ModelGLM] = &providerWithModel{glmP, cfg.Model.GLM.GlmModel}
-	pm[ModelDoubao] = &providerWithModel{doubaoP, cfg.Model.Doubao.DoubaoModel}
-	pm[ModelQwen] = &providerWithModel{qwenP, cfg.Model.Qwen.QwenModel}
+	pm := make(map[ModelType]*providerWithModel)
+	pm[ModelTypeErnie] = &providerWithModel{
+		Provider:  baiduP,
+		ModelType: ModelTypeErnie,
+		ModelName: cfg.Model.Baidu.ErnieModel,
+	}
+	pm[ModelTypeDeepSeek] = &providerWithModel{
+		Provider:  baiduP,
+		ModelType: ModelTypeDeepSeek,
+		ModelName: cfg.Model.Baidu.DeepSeekModel,
+	}
+	pm[ModelTypeGLM] = &providerWithModel{
+		Provider:  glmP,
+		ModelType: ModelTypeGLM,
+		ModelName: cfg.Model.GLM.GlmModel,
+	}
+	pm[ModelTypeDoubao] = &providerWithModel{
+		Provider:  doubaoP,
+		ModelType: ModelTypeDoubao,
+		ModelName: cfg.Model.Doubao.DoubaoModel,
+	}
+	pm[ModelTypeQwen] = &providerWithModel{
+		Provider:  qwenP,
+		ModelType: ModelTypeQwen,
+		ModelName: cfg.Model.Qwen.QwenModel,
+	}
 	return &LLM{
 		cfg:         cfg,
 		providerMap: pm,
@@ -67,7 +88,7 @@ type LLMResult struct {
 }
 
 type ChatWithLLMParams struct {
-	Model      Model
+	Model      ModelType
 	ExtraInfos []string
 	Messages   []*ChatMessage
 }
@@ -121,9 +142,10 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 	}
 
 	chatPar := &chatParams{
-		Prompt:  prompt,
-		Content: content,
-		Model:   p.Model,
+		Prompt:    prompt,
+		Content:   content,
+		ModelType: p.ModelType,
+		ModelName: p.ModelName,
 	}
 	chatRes, err := p.Provider.chatWithLLM(ctx, chatPar)
 	if err != nil {
@@ -162,9 +184,10 @@ func (llm *LLM) ChatWithLLM(ctx context.Context, params *ChatWithLLMParams) (*LL
 }
 
 type chatParams struct {
-	Prompt  string
-	Content string
-	Model   string
+	Prompt    string
+	Content   string
+	ModelType ModelType
+	ModelName string
 }
 
 type chatResult struct {

@@ -46,7 +46,7 @@ type JsonSchemaProperty struct {
 	Description string `json:"description"`
 }
 
-var resultJsonSchema = JsonSchema{
+var resultJsonSchema = &JsonSchema{
 	Name:        "reply_result",
 	Description: "回复的响应结构体",
 	Strict:      true,
@@ -77,7 +77,7 @@ func (p *qwenProvider) chatWithLLM(ctx context.Context, params *chatParams) (*ch
 		},
 		Temperature: openai.Float(0.5),
 		TopP:        openai.Float(0.5),
-		Model:       params.Model,
+		Model:       params.ModelName,
 	}
 	stream := p.client.Chat.Completions.NewStreaming(ctx, chatCompletionParams, opts...)
 	chatCompletion := openai.ChatCompletionAccumulator{}

@@ -193,11 +193,11 @@ type GiftWithTimer struct {
 }
 
 type LiveConfig struct {
-	DisableTTS          bool      `json:"disable_tts"`
-	DisableLlm          bool      `json:"disable_llm"`
-	DisableWelcomeLimit bool      `json:"disable_welcome_limit"`
-	DisableIdleTTS      bool      `json:"disable_idle_tts"`
-	Model               llm.Model `json:"model"`
+	DisableTTS          bool          `json:"disable_tts"`
+	DisableLlm          bool          `json:"disable_llm"`
+	DisableWelcomeLimit bool          `json:"disable_welcome_limit"`
+	DisableIdleTTS      bool          `json:"disable_idle_tts"`
+	Model               llm.ModelType `json:"model"`
 }
 
 type ChatMessage struct {

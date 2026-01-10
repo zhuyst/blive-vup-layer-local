@@ -91,7 +91,7 @@ glm_model = "glm-4.7"
 api_key = ""
 [llm.model.doubao]
 base_url = "https://ark.cn-beijing.volces.com/api/v3"
-doubao_model = "doubao-seed-1-6-251015"
+doubao_model = "doubao-seed-1-8-251228"
 api_key = ""
 [llm.model.qwen]
 base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1"

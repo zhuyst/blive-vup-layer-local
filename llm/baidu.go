@@ -30,6 +30,11 @@ type BaiduSearchItemsPostprocess struct {
 	MaxSlice   int `json:"max_slice"`
 }
 
+type BaiduResponseFormat struct {
+	Type       string      `json:"type"`
+	JsonSchema *JsonSchema `json:"json_schema"`
+}
+
 func (p *baiduProvider) chatWithLLM(ctx context.Context, params *chatParams) (*chatResult, error) {
 	opts := []option.RequestOption{
 		option.WithJSONSet("search_source", "baidu_search_v2"),
@@ -50,7 +55,7 @@ func (p *baiduProvider) chatWithLLM(ctx context.Context, params *chatParams) (*c
 		},
 		Temperature: openai.Float(0.5),
 		TopP:        openai.Float(0.5),
-		Model:       params.Model,
+		Model:       params.ModelName,
 	}
 	chatCompletion, err := p.client.Chat.Completions.New(ctx, chatCompletionParams, opts...)
 	if err != nil {

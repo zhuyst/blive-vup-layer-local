@@ -27,6 +27,9 @@ func (p *doubaoProvider) chatWithLLM(ctx context.Context, params *chatParams) (*
 	store := false
 	temperature := 0.5
 	topP := 0.5
+	country := "中国"
+	region := "广西"
+	city := "南宁"
 
 	//schemaJson, err := json.Marshal(resultJsonSchema.Schema)
 	//if err != nil {
@@ -60,12 +63,9 @@ func (p *doubaoProvider) chatWithLLM(ctx context.Context, params *chatParams) (*
 		},
 	}
 	createResponsesReq := &responses.ResponsesRequest{
-		Model: params.Model,
+		Model: params.ModelName,
 		Thinking: &responses.ResponsesThinking{
 			Type: &thinkType,
-		},
-		Reasoning: &responses.ResponsesReasoning{
-			Effort: responses.ReasoningEffort_medium,
 		},
 		Store:       &store,
 		Temperature: &temperature,
@@ -100,11 +100,22 @@ func (p *doubaoProvider) chatWithLLM(ctx context.Context, params *chatParams) (*
 				Union: &responses.ResponsesTool_ToolWebSearch{
 					ToolWebSearch: &responses.ToolWebSearch{
 						Type: responses.ToolType_web_search,
+						UserLocation: &responses.UserLocation{
+							Type:    responses.UserLocationType_approximate,
+							Country: &country,
+							Region:  &region,
+							City:    &city,
+						},
 					},
 				},
 			},
 		},
 		MaxToolCalls: &maxToolCalls,
+	}
+	if params.ModelType == ModelTypeDoubao {
+		createResponsesReq.Reasoning = &responses.ResponsesReasoning{
+			Effort: responses.ReasoningEffort_medium,
+		}
 	}
 
 	resp, err := p.client.CreateResponses(ctx, createResponsesReq)
